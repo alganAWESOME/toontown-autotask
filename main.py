@@ -5,15 +5,13 @@ from windowcapture import WindowCapture
 wincap = WindowCapture("Toontown Offline")
 wincap.start()
 
-
 def apply_filter(screenshot):
-
     return screenshot
 
 while True:
     if wincap.screenshot is None:
         continue
-
+    
     window = apply_filter(wincap.screenshot)
     
     cv.imshow("screen", window)
