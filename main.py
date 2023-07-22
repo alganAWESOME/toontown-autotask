@@ -13,7 +13,7 @@ def main():
         if wincap.screenshot is None:
             continue
 
-        screenshot = trackbars.read_trackbar_and_apply_filter(wincap.screenshot)
+        screenshot = trackbars.read_trackbars_and_apply_filter(wincap.screenshot)
         
         cv.imshow("screen", screenshot)
         key = cv.waitKey(1)
@@ -21,19 +21,5 @@ def main():
             wincap.stop()
             cv.destroyAllWindows()
             break
-
-def apply_filter(screenshot, threshold, lower, upper):
-    #screenshot = cv.cvtColor(screenshot, cv.COLOR_BGR2GRAY)
-    #_, screenshot = cv.threshold(screenshot, threshold, 255, cv.THRESH_BINARY)
-
-    # Create HSV Image and threshold into a range.
-    hsv = cv.cvtColor(screenshot, cv.COLOR_BGR2HSV)
-    mask = cv.inRange(hsv, lower, upper)
-    screenshot = cv.bitwise_and(screenshot,screenshot, mask= mask)
-
-    return screenshot
-
-def nothing(x):
-    pass
 
 main()
