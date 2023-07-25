@@ -1,7 +1,11 @@
+"""MIT License
+
+Copyright (c) 2023 Ben Johnson
+"""
+
 import numpy as np
 import win32gui, win32ui, win32con
 from threading import Thread, Lock
-
 
 class WindowCapture:
 
