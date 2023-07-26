@@ -59,9 +59,9 @@ class Trackbars:
         mask = cv.inRange(hsv, self.lower, self.upper)
         screenshot = cv.bitwise_and(screenshot,screenshot, mask= mask)
 
-        screenshot = cv.Canny(screenshot, self.canny1, self.canny2)
+        #screenshot = cv.Canny(screenshot, self.canny1, self.canny2)
 
-        #_, screenshot = cv.threshold(screenshot, self.threshold, 255, cv.THRESH_BINARY)
+        _, screenshot = cv.threshold(screenshot, self.threshold, 255, cv.THRESH_BINARY)
 
         #screenshot = screenshot[self.topleftY:self.bottomrightY, self.topleftX:self.bottomrightX]
 
