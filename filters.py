@@ -12,7 +12,7 @@ class Trackbars:
         cv.createTrackbar("Threshold1", self.window_name, 0, 255, self.nothing)
         cv.createTrackbar("Threshold2", self.window_name, 0, 255, self.nothing)
 
-        # create trackbars for color change
+        # Trackbars for color change
         cv.createTrackbar('HMin',self.window_name,0,179,self.nothing) # Hue is from 0-179 for Opencv
         cv.createTrackbar('SMin',self.window_name,0,255,self.nothing)
         cv.createTrackbar('VMin',self.window_name,0,255,self.nothing)
@@ -62,7 +62,7 @@ class Trackbars:
         # To be optimized: filters should be applied to self.map beforehand
         # and saved as opposed to applied every frame.
         def crop_minimap(image):
-            # Crops screenshot into the shape of self.map
+            # Crops screenshot into the shape of self.cropper
             gray_image = cv.cvtColor(self.cropper, cv.COLOR_BGR2GRAY)
             _, mask = cv.threshold(gray_image, 1, 255, cv.THRESH_BINARY)
             mask_3channel = cv.merge((mask, mask, mask))
@@ -76,20 +76,27 @@ class Trackbars:
             hsv_filtered = cv.bitwise_and(image,image, mask= mask)
             return hsv_filtered
 
-        def image_diff(image):
-            # Finds image difference between screenshot and map
-            kernel_size = (5, 5)
-            blurred_image = cv.GaussianBlur(image, kernel_size, 0)
-            blurred_map = cv.GaussianBlur(self.map, kernel_size, 0)
-            diff_image = cv.absdiff(blurred_image, blurred_map)
-            return cv.cvtColor(diff_image, cv.COLOR_BGR2GRAY)
+        def threshold(image):
+            gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
+            _, thresholded = cv.threshold(gray, 3, 255, cv.THRESH_BINARY)
+            return thresholded
+        
+        def erode_and_dilate(image):
+            kernel = np.ones((3, 3), np.uint8)
+            dilated_image = cv.dilate(image, kernel, iterations=1)
+            eroded_image = cv.erode(dilated_image, kernel, iterations=1)
 
-        cropped = crop_minimap(screenshot)
-        #hsv_filtered = hsv_filter(cropped)
-        diff_image = image_diff(cropped)
-        _, filtered = cv.threshold(diff_image, self.threshold1, 255, cv.THRESH_BINARY)
-
-        #screenshot = screenshot[self.topleftY:self.bottomrightY, self.topleftX:self.bottomrightX]
+            return eroded_image
+        
+        # cropped = crop_minimap(screenshot)
+        # #hsv_filtered = hsv_filter(cropped)
+        # diff_image = image_diff(cropped)
+        # _, filtered = cv.threshold(diff_image, self.threshold1, 255, cv.THRESH_BINARY)
+        
+        diff_image = cv.absdiff(screenshot, self.map)
+        cropped = crop_minimap(diff_image)
+        thresholded = threshold(cropped)
+        filtered = erode_and_dilate(thresholded)
 
         return filtered
     

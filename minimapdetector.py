@@ -7,10 +7,7 @@ class Detector:
         self.map_white = cv.imread('filter-loopylane.png')
         self.map_white_copy = self.map_white.copy()
 
-        # _, self.map_white = cv.threshold(self.map,1,255,cv.THRESH_BINARY)
-        # self.map_white_copy = self.map_white.copy()
-
-        self.frame_count = 20
+        self.frame_count = 40
         self.last_frames = np.array([])
 
     def main(self, filtered):
@@ -49,7 +46,8 @@ class Detector:
 
         if len(self.last_frames) >= 2:
             pos_new = self.last_frames[-1]
-            pos_old = np.mean(self.last_frames[:-1], axis=0)
+            frame_count = int(len(self.last_frames)/2)
+            pos_old = np.mean(self.last_frames[:-frame_count], axis=0)
             direction_raw = pos_new - pos_old
             if np.all(direction_raw == 0):
                 direction = np.array([0,0])
