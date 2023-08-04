@@ -5,7 +5,8 @@ class Trackbars:
 
     def __init__(self) -> None:
         self.window_name = "Trackbars"
-        self.map = cv.imread('loopy-lane-map.png')
+        self.map = cv.imread('map-loopylane.png')
+        self.cropper = cv.imread('filter-loopylane.png')
 
         cv.namedWindow(self.window_name)
         cv.createTrackbar("Threshold1", self.window_name, 0, 255, self.nothing)
@@ -62,7 +63,7 @@ class Trackbars:
         # and saved as opposed to applied every frame.
         def crop_minimap(image):
             # Crops screenshot into the shape of self.map
-            gray_image = cv.cvtColor(self.map, cv.COLOR_BGR2GRAY)
+            gray_image = cv.cvtColor(self.cropper, cv.COLOR_BGR2GRAY)
             _, mask = cv.threshold(gray_image, 1, 255, cv.THRESH_BINARY)
             mask_3channel = cv.merge((mask, mask, mask))
             cropped = cv.bitwise_and(image, mask_3channel)
