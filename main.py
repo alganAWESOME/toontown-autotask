@@ -12,6 +12,8 @@ def main():
     
     det = Detector()
 
+    print("hi there")
+
     while True:
         if wincap.screenshot is None:
             continue
