@@ -11,52 +11,25 @@ class Detector:
         self.last_frames = np.array([])
 
     def main(self, filtered):
-        pos = self.detect_arrow_pos(filtered)
-        self.save_previous_position(pos)
-        direction = self.detect_arrow_direction()
+        pos, direction = self.detect_arrow(filtered)
         pos_rounded, direction_rounded = self.round(pos, direction)
         minimap = self.draw_circle_on_map(pos_rounded, direction_rounded)
         return minimap
     
-    def detect_arrow_pos(self,filtered):
-        # Takes in filtered screenshot, returns (x,y) coords of arrow
-        y_white, x_white = np.where(filtered==255)
-        try:
-            y_white, x_white = y_white[0], x_white[0]
-        except:
-            return
+    def detect_arrow(self, filtered):
+        arrow_pixels = np.argwhere(filtered == 255)
+        mean_pixel = np.mean(arrow_pixels, axis=0)
 
-        coords = np.array([np.mean(x_white), np.mean(y_white)])
+        centered_data = arrow_pixels - mean_pixel
 
-        return coords
-    
-    def save_previous_position(self, pos):
-        # np.vstack doesn't work if self.last_frames is empty
-        if len(self.last_frames) == 0:
-            self.last_frames = np.array([pos])
-        else:
-            self.last_frames = np.vstack((self.last_frames.copy(), pos))
-            if len(self.last_frames) == self.frame_count+1:
-                self.last_frames = self.last_frames[1:].copy()
-    
-    def detect_arrow_direction(self):
-        # Mean of previous frames
-        # self.frames == [old_old, old, current]
-        print(f"self.last_frames: {self.last_frames}")
+        _, _, Vt = np.linalg.svd(centered_data, full_matrices=False)
 
-        if len(self.last_frames) >= 2:
-            pos_new = self.last_frames[-1]
-            frame_count = int(len(self.last_frames)/2)
-            pos_old = np.mean(self.last_frames[:-frame_count], axis=0)
-            direction_raw = pos_new - pos_old
-            if np.all(direction_raw == 0):
-                direction = np.array([0,0])
-            else:
-                direction = (direction_raw / np.linalg.norm(direction_raw)) * 10
-        else:
-            direction = np.array([0,0])
+        direction_estimate_raw = Vt[0][::-1]
+        direction_estimate = (direction_estimate_raw / np.linalg.norm(direction_estimate_raw)) * 10
 
-        return direction
+        pos_estimate = mean_pixel[::-1]
+
+        return pos_estimate, direction_estimate
     
     def round(self, pos, direction):
         return np.round(pos).astype(int), np.round(direction).astype(int)
