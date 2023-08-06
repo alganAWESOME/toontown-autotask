@@ -1,8 +1,9 @@
 import cv2 as cv
 import numpy as np
-from windowcapture import WindowCapture
-from filters import Trackbars
-from minimapdetector import Detector
+from WindowCapture import WindowCapture
+from Filters import Trackbars
+from MinimapDetector import Detector
+from Pathfinder import Pathfinder
 
 def main():
     trackbars = Trackbars()
@@ -10,7 +11,8 @@ def main():
     wincap = WindowCapture("Toontown Offline")
     wincap.start()
     
-    det = Detector()
+    arrow_detector = Detector()
+    pathfinder = Pathfinder()
 
     while True:
         if wincap.screenshot is None:
@@ -18,7 +20,8 @@ def main():
         
         filtered = trackbars.read_trackbars_and_apply_filter(wincap.screenshot)
 
-        minimap = det.main(filtered)
+        pos, direction = arrow_detector.main(filtered)
+        minimap = pathfinder.visualize(pos, direction)
 
         cv.imshow("game",minimap)
         
