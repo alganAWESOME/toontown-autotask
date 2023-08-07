@@ -74,11 +74,6 @@ class Application(tk.Tk):
             self.canvas.create_oval(event.x - 5, event.y - 5, event.x + 5, event.y + 5, fill='blue')
             self.nodes.append(node)
 
-        # Otherwise, we create a new node
-        node = Node(event.x, event.y)
-        self.canvas.create_oval(event.x - 5, event.y - 5, event.x + 5, event.y + 5, fill='blue')
-        self.nodes.append(node)
-
     def on_canvas_right_click(self, event):
         for node in self.nodes:
             if abs(node.x - event.x) <= 5 and abs(node.y - event.y) <= 5:
@@ -90,6 +85,7 @@ class Application(tk.Tk):
                 return
 
     def save_to_json(self):
+        print(self.nodes)
         graph_data = {'nodes': [], 'edges': []}
         for idx, node in enumerate(self.nodes):
             graph_data['nodes'].append({
