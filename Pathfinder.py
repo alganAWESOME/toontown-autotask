@@ -10,36 +10,68 @@ class Pathfinder:
         self.graph = self.load_graph()
         self.draw_graph_on_map()
         self.map_copy = self.map.copy()
+
         self.path = None
         self.idx = 0
         self.node_reached_threshold = 10
+        self.angle_threshold = 10
+        self.angle_sign = None
+        self.arrow_key_input = None
 
     def main(self, arrow_pos, arrow_direction):
         # If path not initialised, then do so
         # May need to modify later so that self.path is initialised at __init__
         if self.path is None:
             self.path = self.find_shortest_path(arrow_pos)
+            pg.keyDown('up')
         else:
-            # while self.path is not empty
-            # always hold forward
-            # find direction between current position and next node
-            # hold right or left depending on arrow direction
-            print("we're here")
-            if self.idx <= len(self.path):
-                pg.press('up')
+            if self.idx < len(self.path):
                 next_node = self.path[self.idx]
-                #print(f"next node {self.graph[next_node]}")
                 next_node_pos = np.array([self.graph.nodes[next_node]['x'], self.graph.nodes[next_node]['y']])
+                # if next node not reached
                 if self.distance(arrow_pos, next_node) > self.node_reached_threshold:
                     desired_direction = next_node_pos - arrow_pos
-                    if self.angle(arrow_direction, desired_direction) > 0:
-                        pg.press('left')
+                    angle = self.angle(arrow_direction, desired_direction)
+                    # (1) if no direction is being input
+                    if self.arrow_key_input is None:
+                        self.angle_sign = np.sign(angle)
+                        # if bot not facing target node within threshold, make it turn
+                        # program jumps to (2)
+                        if np.abs(angle) >= self.angle_threshold:
+                            if self.angle_sign == 1:
+                                self.arrow_key_input = 'right'
+                            elif self.angle_sign == -1:
+                                self.arrow_key_input = 'left'
+                            pg.keyDown(self.arrow_key_input)
+                    # (2) if we're already turning
                     else:
-                        pg.press('right')
+                        print(f"Going towards node {next_node}, angle towards node {angle}, should be turning {self.arrow_key_input}")
+                        new_angle_sign = np.sign(angle)
+                        # check for switch in angle sign, in which case switch arrow key input
+                        if new_angle_sign == -self.angle_sign:
+                            pg.keyUp(self.arrow_key_input)
+                            self.arrow_key_input = self.switch_arrow_key_input(self.arrow_key_input)
+                            pg.keyDown(self.arrow_key_input)
+                        self.angle_sign = new_angle_sign
+                        # if bot direction gets within threshold, stop turning
+                        # program jumps to (1)
+                        if np.abs(angle) < self.angle_threshold:
+                            pg.keyUp(self.arrow_key_input)
+                            self.arrow_key_input = None
                 else:
                     self.idx += 1
             else:
+                pg.keyUp('up')
                 print("Done?")
+    
+    @staticmethod
+    def switch_arrow_key_input(current_input):
+        if current_input == "left":
+            return "right"
+        elif current_input == "right":
+            return "left"
+        else:
+            raise ValueError("current_input must be either 'right' or 'left'")
         
     def load_graph(self):
         with open("graph_data.json", "r") as file:
@@ -55,7 +87,6 @@ class Pathfinder:
     
     def find_shortest_path(self, pos):
         # Step 1) Find node nearest to player
-        
         node_nearest_to_player = 0
         distance_nearest = self.distance(pos, 0)
 
@@ -67,10 +98,10 @@ class Pathfinder:
         
         print(f"Nearest node to {pos} is {node_nearest_to_player}")
         # Step 2) Find node nearest to end-goal
-        # Modify above code to incorporate step 2, for now target is node 4
+        # Modify above code to incorporate step 2, for now target is some node
 
         # Step 3) Calculate shortest path
-        shortest_path = nx.shortest_path(self.graph, node_nearest_to_player, 4, weight='weight')
+        shortest_path = nx.shortest_path(self.graph, node_nearest_to_player, 12, weight='weight')
         return shortest_path
     
     def distance(self, pos, node):
