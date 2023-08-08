@@ -4,7 +4,7 @@ from window_capture import WindowCapture
 from filters import Trackbars
 from minimap_detector import Detector
 from pathfinder import Pathfinder
-from visualizer import Visualizer
+from visualizer import Visualizer, GraphCreator
 from time import sleep
 
 def main():
@@ -16,6 +16,7 @@ def main():
     arrow_detector = Detector()
     pathfinder = Pathfinder(40)
     visualizer = Visualizer()
+    graph_creator = GraphCreator(visualizer)
 
     sleep(2)
     while True:
@@ -26,7 +27,8 @@ def main():
         pos, direction = arrow_detector.main(filtered)
         #visualizer.graph_creator(pos)
         minimap = visualizer.visualize(pos, direction)
-        pathfinder.main(pos, direction)
+        graph_creator.main(pos)
+        #pathfinder.main(pos, direction)
 
         cv.imshow("game",minimap)
         key = cv.waitKey(1)
