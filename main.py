@@ -1,10 +1,10 @@
 import cv2 as cv
 import numpy as np
-from WindowCapture import WindowCapture
-from Filters import Trackbars
-from MinimapDetector import Detector
-from Pathfinder import Pathfinder
-from Visualizer import Visualizer
+from window_capture import WindowCapture
+from filters import Trackbars
+from minimap_detector import Detector
+from pathfinder import Pathfinder
+from visualizer import Visualizer
 from time import sleep
 
 def main():
@@ -14,7 +14,7 @@ def main():
     wincap.start()
     
     arrow_detector = Detector()
-    pathfinder = Pathfinder()
+    pathfinder = Pathfinder(40)
     visualizer = Visualizer()
 
     sleep(2)
@@ -24,11 +24,11 @@ def main():
         
         filtered = trackbars.read_trackbars_and_apply_filter(wincap.screenshot)
         pos, direction = arrow_detector.main(filtered)
+        #visualizer.graph_creator(pos)
         minimap = visualizer.visualize(pos, direction)
         pathfinder.main(pos, direction)
 
         cv.imshow("game",minimap)
-        #cv.imshow("filtered", filtered)
         key = cv.waitKey(1)
         if key == ord('q'):
             wincap.stop()

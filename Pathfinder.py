@@ -5,7 +5,7 @@ import networkx as nx
 import pyautogui as pg
 
 class Pathfinder:
-    def __init__(self) -> None:
+    def __init__(self, target_node) -> None:
         # self.map = cv.imread('filter-loopylane.png')
         # self.draw_graph_on_map()
         # self.map_copy = self.map.copy()
@@ -16,6 +16,7 @@ class Pathfinder:
         self.angle_threshold = 10
         self.angle_sign = None
         self.arrow_key_input = None
+        self.target_node = target_node
 
     def main(self, arrow_pos, arrow_direction):
         # If path not initialised, then do so
@@ -100,7 +101,7 @@ class Pathfinder:
         # Modify above code to incorporate step 2, for now target is some node
 
         # Step 3) Calculate shortest path
-        shortest_path = nx.shortest_path(self.graph, node_nearest_to_player, 12, weight='weight')
+        shortest_path = nx.shortest_path(self.graph, node_nearest_to_player, self.target_node, weight='weight')
         return shortest_path
     
     def distance(self, pos, node):
