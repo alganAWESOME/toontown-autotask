@@ -10,9 +10,10 @@ import math
 
 
 class Node:
-    def __init__(self, x, y):
+    def __init__(self, x, y, stop_required=False):
         self.x = x
         self.y = y
+        self.stop_required = stop_required
         self.connections = []
 
     def distance(self, other):
@@ -34,6 +35,7 @@ class Application(tk.Tk):
         self.canvas.pack(fill=tk.BOTH, expand=True)
 
         self.canvas.bind("<Button-1>", self.on_canvas_left_click)
+        self.canvas.bind("<Button-2>", self.on_canvas_middle_click)
         self.canvas.bind("<Button-3>", self.on_canvas_right_click)
 
         # Loading minimap image
@@ -43,6 +45,11 @@ class Application(tk.Tk):
         # Button to save the graph to JSON
         self.save_button = tk.Button(self, text="Save to JSON", command=self.save_to_json)
         self.save_button.pack(side=tk.BOTTOM)
+
+        # Button to load existing graph from JSON
+        self.load_button = tk.Button(self, text="Load Graph", command=self.load_from_json)
+        self.load_button.pack(side=tk.BOTTOM)
+
 
     def load_image(self, image_path):
         img = Image.open(image_path)
@@ -71,8 +78,19 @@ class Application(tk.Tk):
         # create a new node
         if not self.temp_node:
             node = Node(event.x, event.y)
-            self.canvas.create_oval(event.x - 5, event.y - 5, event.x + 5, event.y + 5, fill='blue')
+            color = 'red' if node.stop_required else 'blue'
+            self.canvas.create_oval(event.x - 5, event.y - 5, event.x + 5, event.y + 5, fill=color)
             self.nodes.append(node)
+
+    def on_canvas_middle_click(self, event):
+        for node in self.nodes:
+            radius = 10
+            if abs(node.x - event.x) <= radius and abs(node.y - event.y) <= radius:
+                node.stop_required = not node.stop_required  # Toggle stop_required
+                color = 'red' if node.stop_required else 'blue'
+                self.canvas.create_oval(node.x - 5, node.y - 5, node.x + 5, node.y + 5, fill=color, outline='')
+                return
+
 
     def on_canvas_right_click(self, event):
         for node in self.nodes:
@@ -85,14 +103,15 @@ class Application(tk.Tk):
                 return
 
     def save_to_json(self):
-        print(self.nodes)
         graph_data = {'nodes': [], 'edges': []}
         for idx, node in enumerate(self.nodes):
             graph_data['nodes'].append({
                 'id': idx,
                 'x': node.x,
-                'y': node.y
+                'y': node.y,
+                'stop_required': node.stop_required
             })
+
 
             for conn in node.connections:
                 conn_idx = self.nodes.index(conn)
@@ -116,6 +135,33 @@ class Application(tk.Tk):
             self.canvas.create_oval(node.x - 5, node.y - 5, node.x + 5, node.y + 5, fill='blue')
             for conn in node.connections:
                 self.canvas.create_line(node.x, node.y, conn.x, conn.y)
+
+    def load_from_json(self):
+        with open("graph_data.json", "r") as infile:
+            graph_data = json.load(infile)
+
+        # Clear the canvas and node list first
+        self.canvas.delete(tk.ALL)
+        self.load_image(self.image_path)
+        self.nodes = []
+
+        # Load nodes
+        for node_data in graph_data['nodes']:
+            node = Node(node_data['x'], node_data['y'], node_data.get('stop_required', False))
+            color = 'red' if node.stop_required else 'blue'
+            self.canvas.create_oval(node.x - 5, node.y - 5, node.x + 5, node.y + 5, fill=color)
+            self.nodes.append(node)
+
+        # Load edges/connections
+        for edge_data in graph_data['edges']:
+            start_node = self.nodes[edge_data['start']]
+            end_node = self.nodes[edge_data['end']]
+            
+            if end_node not in start_node.connections:
+                start_node.connections.append(end_node)
+                end_node.connections.append(start_node)
+                
+                self.canvas.create_line(start_node.x, start_node.y, end_node.x, end_node.y)
 
 
 if __name__ == "__main__":

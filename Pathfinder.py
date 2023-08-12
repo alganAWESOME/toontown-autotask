@@ -12,11 +12,12 @@ class Pathfinder:
         self.graph = self.load_graph()
         self.path = None
         self.idx = 0
-        self.node_reached_threshold = 10
+        self.node_reached_threshold = 5
         self.angle_threshold = 10
         self.angle_sign = None
         self.arrow_key_input = None
         self.target_node = target_node
+        self.stopped_moving_forward = False
 
     def main(self, arrow_pos, arrow_direction):
         # If path not initialised, then do so
@@ -28,6 +29,7 @@ class Pathfinder:
             if self.idx < len(self.path):
                 next_node = self.path[self.idx]
                 next_node_pos = np.array([self.graph.nodes[next_node]['x'], self.graph.nodes[next_node]['y']])
+                next_node_requires_stop = self.graph.nodes[next_node]['stop_required']
                 # if next node not reached
                 if self.distance(arrow_pos, next_node) > self.node_reached_threshold:
                     desired_direction = next_node_pos - arrow_pos
@@ -58,7 +60,13 @@ class Pathfinder:
                         if np.abs(angle) < self.angle_threshold:
                             pg.keyUp(self.arrow_key_input)
                             self.arrow_key_input = None
+                            if self.stopped_moving_forward:
+                                pg.keyDown('up')
+                                self.stopped_moving_forward = False
                 else:
+                    if next_node_requires_stop:
+                        pg.keyUp('up')
+                        self.stopped_moving_forward = True
                     self.idx += 1
             else:
                 pg.keyUp('up')
@@ -79,7 +87,7 @@ class Pathfinder:
 
         G = nx.Graph()
         for node in data["nodes"]:
-            G.add_node(node["id"], x=node["x"], y=node["y"])
+            G.add_node(node["id"], x=node["x"], y=node["y"], stop_required=node["stop_required"])
         for edge in data["edges"]:
             G.add_edge(edge["start"], edge["end"], weight=edge["distance"])
 
@@ -115,7 +123,10 @@ class Pathfinder:
         norm_u = np.linalg.norm(u)
         norm_v = np.linalg.norm(v)
 
-        angle_radians = np.arccos(dot_product / (norm_u * norm_v))
+        cos_angle = dot_product / (norm_u * norm_v)
+        cos_angle = np.clip(cos_angle, -1, 1)
+
+        angle_radians = np.arccos(cos_angle)
 
         cross_product = np.cross(u, v)
 

@@ -14,9 +14,11 @@ def main():
     wincap.start()
     
     arrow_detector = Detector()
-    pathfinder = Pathfinder(40)
+    pathfinder = Pathfinder(60)
     visualizer = Visualizer()
     graph_creator = GraphCreator(visualizer)
+
+    graph_creation_mode = True
 
     sleep(2)
     while True:
@@ -25,10 +27,11 @@ def main():
         
         filtered = trackbars.read_trackbars_and_apply_filter(wincap.screenshot)
         pos, direction = arrow_detector.main(filtered)
-        #visualizer.graph_creator(pos)
         minimap = visualizer.visualize(pos, direction)
-        graph_creator.main(pos)
-        #pathfinder.main(pos, direction)
+        if graph_creation_mode:
+            graph_creator.main(pos)
+        else:
+            pathfinder.main(pos, direction)
 
         cv.imshow("game",minimap)
         key = cv.waitKey(1)

@@ -30,7 +30,7 @@ class Visualizer:
 
         # Font settings for node labels
         font = cv.FONT_HERSHEY_SIMPLEX
-        font_scale = 0.5
+        font_scale = 0.2
         font_thickness = 1
         font_color = (0, 0, 0)
 
@@ -58,21 +58,21 @@ class Visualizer:
         radius, color, thickness = 3, (0,255,0), -1
 
         cv.circle(self.map, pos, radius, color, thickness)
-        cv.arrowedLine(self.map,pos, pos+direction,(255,0,0),3)
+        cv.arrowedLine(self.map, pos, pos+direction,(255,0,0),3)
 
         return self.map
 
 class GraphCreator:
     def __init__(self, visualizer) -> None:
         self.visualizer = visualizer
-        self.visualizer.clear_graph_from_map()
+        #self.visualizer.clear_graph_from_map()
 
         self.current_node_id = 0
         self.new_graph = nx.Graph()
         self.new_node_minimum_distance = 10
 
         self.keys_held = set()
-        self.keys = ['shift', 'backspace', 'enter']
+        self.keys = ['shift', 'backspace', 'enter', 'left', 'right', 'up']
 
     def main(self, pos):
         for key in self.keys:
@@ -84,14 +84,16 @@ class GraphCreator:
                 self.keys_held.discard(key)
 
     def graph_creator(self, pos, key):
-        if key=='shift':
+        if key=='shift' or key=='left' or key=='right':
+            stop_required = 'up' not in self.keys_held
+            print(f"Does node just created require a stop? {stop_required}")
             if self.current_node_id == 0:
-                self.new_graph.add_node(self.current_node_id, x=pos[0], y=pos[1])
+                self.new_graph.add_node(self.current_node_id, x=pos[0], y=pos[1], stop_required=stop_required)
                 self.current_node_id += 1
             else:
                 distance = self.distance(pos, self.current_node_id-1)
                 if distance > self.new_node_minimum_distance:
-                    self.new_graph.add_node(self.current_node_id, x=pos[0], y=pos[1])
+                    self.new_graph.add_node(self.current_node_id, x=pos[0], y=pos[1], stop_required=stop_required)
                     self.new_graph.add_edge(self.current_node_id, self.current_node_id-1, distance=distance)
                     self.current_node_id += 1
             self.update_visualizer()
@@ -103,6 +105,15 @@ class GraphCreator:
                 self.update_visualizer()
         
         if key=='enter':
+            # Close loop by adding edge between last and first node
+            # We must format the last node's position properly for distance()
+            # final_node_pos_x = self.new_graph.nodes[self.current_node_id-1]['x']
+            # final_node_pos_y = self.new_graph.nodes[self.current_node_id-1]['y']
+            # final_node_pos = [final_node_pos_x, final_node_pos_y]
+            # distance = self.distance(final_node_pos, 0)
+            # self.new_graph.add_edge(self.current_node_id, 0, distance=distance)
+            #print(f"Just tried to connect node {self.current_node_id-1}")
+
             self.save_graph_to_json()
 
     def distance(self, pos, node):
@@ -114,7 +125,8 @@ class GraphCreator:
         self.visualizer.draw_graph_on_map()
     
     def save_graph_to_json(self):
-        nodes_data = [{"id": int(n), "x": int(self.new_graph.nodes[n]['x']), "y": int(self.new_graph.nodes[n]['y'])} for n in self.new_graph.nodes()]
+        nodes_data = [{"id": int(n), "x": int(self.new_graph.nodes[n]['x']),
+                       "y": int(self.new_graph.nodes[n]['y']), "stop_required":self.new_graph.nodes[n]["stop_required"]} for n in self.new_graph.nodes()]
         edges_data = [{"start": u, "end": v, "distance": self.new_graph[u][v]['distance']} for u, v in self.new_graph.edges()]
         graph_data = {"nodes": nodes_data, "edges": edges_data}
         
