@@ -15,12 +15,12 @@ def main():
     wincap.start()
     
     arrow_detector = Detector()
-    pathfinder = Pathfinder(60)
+    pathfinder = Pathfinder(34)
     visualizer = Visualizer()
     graph_creator = GraphCreator(visualizer)
-    ocr = TextDetector((4, 203, 137, 23))
+    #ocr = TextDetector((4, 203, 137, 23))
 
-    graph_creation_mode = True
+    graph_creation_mode = False
 
     sleep(2)
     while True:
@@ -35,9 +35,8 @@ def main():
         else:
             pathfinder.main(pos, direction)
         
-        processed_screenshot = ocr.detect_text(wincap.screenshot)
-        cv.imshow("text", processed_screenshot)
-
+        # processed_screenshot = ocr.detect_text(wincap.screenshot)
+        # cv.imshow("text", processed_screenshot)
 
         cv.imshow("game",minimap)
         key = cv.waitKey(1)

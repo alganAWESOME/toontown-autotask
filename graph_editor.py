@@ -1,13 +1,8 @@
-"""
-Credit to OpenAI as this was largely created by ChatGPT
-"""
-
 import tkinter as tk
 from tkinter import filedialog
 from PIL import Image, ImageTk
 import json
 import math
-
 
 class Node:
     def __init__(self, x, y, stop_required=False):
@@ -18,7 +13,6 @@ class Node:
 
     def distance(self, other):
         return math.sqrt((self.x - other.x)**2 + (self.y - other.y)**2)
-
 
 class Application(tk.Tk):
     def __init__(self):
