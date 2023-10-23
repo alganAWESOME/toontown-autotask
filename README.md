@@ -4,4 +4,4 @@
 
 ## How does it work? (30 second clip)
 
-![Video of the bot](https://github.com/alganAWESOME/toontown-autotask/assets/116665499/1da94298-1403-4c0f-ac3f-0cc76b2959ea)
+https://github.com/alganAWESOME/toontown-autotask/assets/116665499/1da94298-1403-4c0f-ac3f-0cc76b2959ea
