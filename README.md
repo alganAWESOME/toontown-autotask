@@ -4,4 +4,4 @@
 
 ## How does it work? (30 second clip)
 
-![Short video of the bot](https://clipchamp.com/watch/htodKzY2IDv?utm_source=share&utm_medium=social&utm_campaign=watch)
+![Video of the bot](https://github.com/alganAWESOME/toontown-autotask/assets/116665499/1da94298-1403-4c0f-ac3f-0cc76b2959ea)
