@@ -8,13 +8,29 @@ class GameColorFilter:
     def __init__(self, window_name):
         self.window_capture = WindowCapture(window_name)
         self.clicked_color = None
-        self.threshold = 20
+        self.hue_threshold = 20
+        self.saturation_threshold = 20
+        self.value_threshold = 20
         self.HSV_range = None
         self.init_tkinter()
 
     def init_tkinter(self):
         self.root = Tk()
         self.root.title("Filter Configurator")
+        
+        # Sliders for HSV threshold
+        self.hue_scale = Scale(self.root, from_=0, to=89, orient=HORIZONTAL, label="Hue Threshold", command=self.on_hue_threshold_change)
+        self.hue_scale.set(self.hue_threshold) 
+        self.hue_scale.pack()
+        
+        self.saturation_scale = Scale(self.root, from_=0, to=255, orient=HORIZONTAL, label="Saturation Threshold", command=self.on_saturation_threshold_change)
+        self.saturation_scale.set(self.saturation_threshold) 
+        self.saturation_scale.pack()
+        
+        self.value_scale = Scale(self.root, from_=0, to=255, orient=HORIZONTAL, label="Value Threshold", command=self.on_value_threshold_change)
+        self.value_scale.set(self.value_threshold) 
+        self.value_scale.pack()
+
         Label(self.root, text="Filter Name:").pack()
         self.filter_name_entry = Entry(self.root)
         self.filter_name_entry.pack()
@@ -24,7 +40,6 @@ class GameColorFilter:
     def start(self):
         self.window_capture.start()
         cv.namedWindow("Original")
-        cv.createTrackbar("Threshold", "Original", self.threshold, 100, self.on_threshold_change)
         cv.setMouseCallback("Original", self.on_mouse_click)
 
         while True:
@@ -45,29 +60,74 @@ class GameColorFilter:
 
             self.root.update()
 
-    def on_threshold_change(self, pos):
-        self.threshold = pos
-        if self.clicked_color is not None:
-            self.update_HSV_range()
-
     def on_mouse_click(self, event, x, y, flags, param):
         if event == cv.EVENT_LBUTTONDOWN:
-            self.clicked_color = self.window_capture.screenshot[y, x]
+            # Capture the BGR color from the screenshot at the clicked position
+            bgr_color = self.window_capture.screenshot[y, x]
+
+            self.clicked_color = bgr_color
+
+            # Update the HSV range based on the new color
             self.update_HSV_range()
 
     def update_HSV_range(self):
-        hsv_color = cv.cvtColor(np.uint8([[self.clicked_color]]), cv.COLOR_BGR2HSV)[0][0]
-        self.HSV_range = {
-            "HSV_min": [max(hsv_color[0] - self.threshold, 0), max(hsv_color[1] - self.threshold, 0), max(hsv_color[2] - self.threshold, 0)],
-            "HSV_max": [min(hsv_color[0] + self.threshold, 179), min(hsv_color[1] + self.threshold, 255), min(hsv_color[2] + self.threshold, 255)]
-        }
+        if self.clicked_color is not None:
+            # Convert the BGR color to HSV color space
+            bgr_color = np.uint8([[self.clicked_color]])
+            hsv_color = cv.cvtColor(bgr_color, cv.COLOR_BGR2HSV)[0][0]
+            #print(f"hsv={hsv_color}")
+
+            # Calculate the minimum and maximum HSV values, wrapping the Hue
+            hue_min = (hsv_color[0] - self.hue_threshold) % 180
+            hue_max = (hsv_color[0] + self.hue_threshold) % 180
+            sat_min = max(hsv_color[1] - self.saturation_threshold, 0)
+            sat_max = min(hsv_color[1] + self.saturation_threshold, 255)
+            val_min = max(hsv_color[2] - self.value_threshold, 0)
+            val_max = min(hsv_color[2] + self.value_threshold, 255)
+
+            # If the range includes the wrap-around, split into two ranges
+            if hue_min > hue_max:
+                self.HSV_range = [
+                    {"HSV_min": [hue_min, sat_min, val_min], "HSV_max": [179, sat_max, val_max]},
+                    {"HSV_min": [0, sat_min, val_min], "HSV_max": [hue_max, sat_max, val_max]}
+                ]
+            else:
+                self.HSV_range = [{"HSV_min": [hue_min, sat_min, val_min], "HSV_max": [hue_max, sat_max, val_max]}]
+
 
     def apply_color_filter(self, image):
+        # Initialize a mask for all zeros (no pixels selected)
+        final_mask = np.zeros(image.shape[:2], dtype=np.uint8)
+
+        # Convert the image to HSV color space one time for efficiency
         hsv_image = cv.cvtColor(image, cv.COLOR_BGR2HSV)
-        lower_bound = np.array(self.HSV_range["HSV_min"])
-        upper_bound = np.array(self.HSV_range["HSV_max"])
-        mask = cv.inRange(hsv_image, lower_bound, upper_bound)
-        return cv.bitwise_and(image, image, mask=mask)
+
+        # Apply each filter in the HSV range list
+        for filter_range in self.HSV_range:
+            # Create mask for current filter range
+            lower_bound = np.array(filter_range["HSV_min"])
+            upper_bound = np.array(filter_range["HSV_max"])
+            current_mask = cv.inRange(hsv_image, lower_bound, upper_bound)
+            
+            # Combine the current mask with the final mask using bitwise OR
+            final_mask = cv.bitwise_or(final_mask, current_mask)
+
+        # Apply the final mask to the original image
+        filtered_image = cv.bitwise_and(image, image, mask=final_mask)
+        return filtered_image
+
+
+    def on_hue_threshold_change(self, val):
+        self.hue_threshold = int(val)
+        self.update_HSV_range()
+
+    def on_saturation_threshold_change(self, val):
+        self.saturation_threshold = int(val)
+        self.update_HSV_range()
+
+    def on_value_threshold_change(self, val):
+        self.value_threshold = int(val)
+        self.update_HSV_range()
 
     def append_to_json(self):
         self.update_json(append=True)
