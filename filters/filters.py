@@ -23,23 +23,28 @@ class HSVFilter(BaseFilter):
         self.HSV_range = None
         self.clicked_color = None
 
-    def configure(self, root, update_callback):
-        configure_window = Toplevel(root)
-        configure_window.title("Configure HSV Filter")
-        
-        # Each scale now triggers update_callback immediately after the value is changed
-        Scale(configure_window, from_=0, to=89, orient=HORIZONTAL, label="Hue Threshold",
+    def configure(self, config_frame, update_callback):
+        # Clear any existing widgets in the configuration frame
+        for widget in config_frame.winfo_children():
+            widget.destroy()
+
+        # Creating sliders for each HSV component within the config_frame
+        Label(config_frame, text="Hue Threshold:").pack()
+        Scale(config_frame, from_=0, to=89, orient=HORIZONTAL,
               command=lambda val: self.on_hue_threshold_change(val, update_callback)).pack()
-        Scale(configure_window, from_=0, to=128, orient=HORIZONTAL, label="Saturation Threshold",
+
+        Label(config_frame, text="Saturation Threshold:").pack()
+        Scale(config_frame, from_=0, to=128, orient=HORIZONTAL,
               command=lambda val: self.on_saturation_threshold_change(val, update_callback)).pack()
-        Scale(configure_window, from_=0, to=128, orient=HORIZONTAL, label="Value Threshold",
+
+        Label(config_frame, text="Value Threshold:").pack()
+        Scale(config_frame, from_=0, to=128, orient=HORIZONTAL,
               command=lambda val: self.on_value_threshold_change(val, update_callback)).pack()
         
-    def on_mouse_click(self, event, x, y, flags, param, screenshot):
-        if event == cv.EVENT_LBUTTONDOWN:
-            # Extract the BGR color from the screenshot at the clicked position
-            bgr_color = screenshot[y, x]
-            self.clicked_color = bgr_color
+    def on_mouse_click(self, event, x, y, flags, param, image, source=None):
+        # Handle the mouse click event
+        if event == cv.EVENT_LBUTTONDOWN and image is not None:
+            self.clicked_color = image[y, x]
             self.update_HSV_range()
 
     def update_HSV_range(self):
@@ -91,11 +96,14 @@ class ContrastFilter(BaseFilter):
         super().__init__()
         self.contrast_level = 1.0  # Default contrast level
 
-    def configure(self, root, update_callback):
-        configure_window = Toplevel(root)
-        configure_window.title("Configure Contrast Filter")
+    def configure(self, config_frame, update_callback):
+        # Clear any existing widgets in the configuration frame
+        for widget in config_frame.winfo_children():
+            widget.destroy()
 
-        Scale(configure_window, from_=0, to=3.0, resolution=0.1, orient=HORIZONTAL, label="Contrast Level",
+        # Creating a slider for the contrast level within the config_frame
+        Label(config_frame, text="Contrast Level:").pack()
+        Scale(config_frame, from_=0.5, to=3.0, resolution=0.1, orient=HORIZONTAL,
               command=lambda val: self.on_contrast_change(val, update_callback)).pack()
 
     def on_contrast_change(self, val, update_callback):
@@ -113,3 +121,34 @@ class ContrastFilter(BaseFilter):
         image_adjusted = np.clip(image_adjusted, 0, 255).astype(np.uint8)
 
         return image_adjusted
+    
+class SaturationFilter(BaseFilter):
+    def __init__(self):
+        super().__init__()
+        self.saturation_level = 1.0  # Default saturation level
+
+    def configure(self, config_frame, update_callback):
+        # Clear any existing widgets in the configuration frame
+        for widget in config_frame.winfo_children():
+            widget.destroy()
+
+        # Creating a slider for the saturation level within the config_frame
+        Label(config_frame, text="Saturation Level:").pack()
+        Scale(config_frame, from_=0.0, to=3.0, resolution=0.1, orient=HORIZONTAL,
+              command=lambda val: self.on_saturation_change(val, update_callback)).pack()
+
+    def on_saturation_change(self, val, update_callback):
+        self.saturation_level = float(val)
+        update_callback()
+
+    def apply(self, image):
+        if self.saturation_level == 1.0:  # No change in saturation
+            return image
+
+        # Convert to HSV, adjust saturation, and convert back to BGR
+        hsv_image = cv.cvtColor(image, cv.COLOR_BGR2HSV).astype("float32")
+        hsv_image[..., 1] *= self.saturation_level
+        hsv_image[..., 1] = np.clip(hsv_image[..., 1], 0, 255)
+        adjusted_image = cv.cvtColor(hsv_image.astype("uint8"), cv.COLOR_HSV2BGR)
+        return adjusted_image
+
