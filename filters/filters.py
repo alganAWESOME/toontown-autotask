@@ -13,6 +13,8 @@ class BaseFilter:
         raise NotImplementedError
     
 class HSVFilter(BaseFilter):
+    name = "HSV Filter"
+
     def __init__(self):
         super().__init__()
         self.hue_threshold = 20
@@ -28,9 +30,9 @@ class HSVFilter(BaseFilter):
         # Each scale now triggers update_callback immediately after the value is changed
         Scale(configure_window, from_=0, to=89, orient=HORIZONTAL, label="Hue Threshold",
               command=lambda val: self.on_hue_threshold_change(val, update_callback)).pack()
-        Scale(configure_window, from_=0, to=255, orient=HORIZONTAL, label="Saturation Threshold",
+        Scale(configure_window, from_=0, to=128, orient=HORIZONTAL, label="Saturation Threshold",
               command=lambda val: self.on_saturation_threshold_change(val, update_callback)).pack()
-        Scale(configure_window, from_=0, to=255, orient=HORIZONTAL, label="Value Threshold",
+        Scale(configure_window, from_=0, to=128, orient=HORIZONTAL, label="Value Threshold",
               command=lambda val: self.on_value_threshold_change(val, update_callback)).pack()
         
     def on_mouse_click(self, event, x, y, flags, param, screenshot):
@@ -81,3 +83,33 @@ class HSVFilter(BaseFilter):
         self.value_threshold = int(val)
         self.update_HSV_range()
         update_callback()
+
+class ContrastFilter(BaseFilter):
+    name = "Contrast Filter"
+
+    def __init__(self):
+        super().__init__()
+        self.contrast_level = 1.0  # Default contrast level
+
+    def configure(self, root, update_callback):
+        configure_window = Toplevel(root)
+        configure_window.title("Configure Contrast Filter")
+
+        Scale(configure_window, from_=0, to=3.0, resolution=0.1, orient=HORIZONTAL, label="Contrast Level",
+              command=lambda val: self.on_contrast_change(val, update_callback)).pack()
+
+    def on_contrast_change(self, val, update_callback):
+        self.contrast_level = float(val)
+        update_callback()
+
+    def apply(self, image):
+        # Convert to float for more precision for transformations
+        image_float = image.astype(np.float32)
+
+        # Apply the contrast formula
+        image_adjusted = image_float * self.contrast_level
+
+        # Clip values to the valid range (0 to 255) and convert back to uint8
+        image_adjusted = np.clip(image_adjusted, 0, 255).astype(np.uint8)
+
+        return image_adjusted

@@ -4,11 +4,11 @@ import cv2 as cv
 import numpy as np
 from tkinter import *
 from window_capture import WindowCapture
-from filters import *
 
 class GameColorFilter:
     def __init__(self, window_name):
         self.window_capture = WindowCapture(window_name)
+        self.filter_options = ['HSV Filter', 'Contrast Filter']
         self.filters = []  # List of filter objects
         self.init_tkinter()
         self.current_screenshot = None
@@ -18,7 +18,7 @@ class GameColorFilter:
         self.root.title("Filter Configurator")
 
         # Button to add a new HSV filter
-        Button(self.root, text="Add HSV Filter", command=self.add_hsv_filter).pack()
+        Button(self.root, text="Add Filter", command=self.add_filter).pack()
 
         # Listbox to show active filters
         self.filter_list = Listbox(self.root)
@@ -27,16 +27,68 @@ class GameColorFilter:
         # Button to configure the selected filter
         Button(self.root, text="Configure", command=self.configure_filter).pack()
 
-    def add_hsv_filter(self):
-        new_filter = HSVFilter()
+        # Add "Move Up" and "Move Down" buttons
+        Button(self.root, text="Move Up", command=self.move_filter_up).pack()
+        Button(self.root, text="Move Down", command=self.move_filter_down).pack()
+
+        Button(self.root, text='Delete', command=self.delete_filter).pack()
+
+    def add_filter(self):
+        filter_window = Toplevel(self.root)
+        filter_window.title("Select Filter Type")
+
+        # Dynamically create buttons for each filter type
+        for option in self.filter_options: 
+            Button(filter_window, text=option, 
+                   command=lambda name=option: self.create_filter(name, filter_window)).pack()
+
+    def create_filter(self, filter_name, filter_window):
+        from filters import HSVFilter, ContrastFilter
+        print(f"filter_name={filter_name}")
+        if filter_name == "HSV Filter":
+            new_filter = HSVFilter()
+        elif filter_name == "Contrast Filter":
+            new_filter = ContrastFilter()
+        else:
+            raise ValueError("Unknown filter type")
+
         self.filters.append(new_filter)
-        self.filter_list.insert(END, "HSV Filter")
+        self.filter_list.insert(END, filter_name)
+        filter_window.destroy()
 
     def configure_filter(self):
         selected_index = self.filter_list.curselection()
         if selected_index:
             selected_filter = self.filters[selected_index[0]]
             selected_filter.configure(self.root, self.update_filters)
+
+    def move_filter_up(self):
+        selected_index = self.filter_list.curselection()
+        if selected_index and selected_index[0] > 0:
+            index = selected_index[0]
+            # Swap the filters
+            self.filters[index], self.filters[index - 1] = self.filters[index - 1], self.filters[index]
+            # Update the listbox
+            self.filter_list.insert(index - 1, self.filter_list.get(index))
+            self.filter_list.delete(index + 1)
+            self.filter_list.select_set(index - 1)
+
+    def move_filter_down(self):
+        selected_index = self.filter_list.curselection()
+        if selected_index and selected_index[0] < len(self.filters) - 1:
+            index = selected_index[0]
+            # Swap the filters
+            self.filters[index], self.filters[index + 1] = self.filters[index + 1], self.filters[index]
+            # Update the listbox
+            self.filter_list.insert(index + 2, self.filter_list.get(index))
+            self.filter_list.delete(index)
+            self.filter_list.select_set(index + 1)
+
+    def delete_filter(self):
+        selected_index = self.filter_list.curselection()
+        if selected_index:
+            self.filters.pop(selected_index[0])
+            self.filter_list.delete(selected_index[0])
 
     def update_filters(self):
         # Refreshes the filters; called as a callback from filter configuration
