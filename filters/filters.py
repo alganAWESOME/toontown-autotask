@@ -18,9 +18,9 @@ class HSVFilter(BaseFilter):
     def __init__(self):
         super().__init__()
         self.config = {'HSV_ranges': [{'HSV_min':[0,0,0], 'HSV_max':[179,255,255]}]}
-        self.hue_threshold = 20
-        self.saturation_threshold = 20
-        self.value_threshold = 20
+        self.hue_threshold = 0
+        self.saturation_threshold = 0
+        self.value_threshold = 0
         self.HSV_range = None
         self.clicked_color = None
 
@@ -31,16 +31,22 @@ class HSVFilter(BaseFilter):
 
         # Creating sliders for each HSV component within the config_frame
         Label(config_frame, text="Hue Threshold:").pack()
-        Scale(config_frame, from_=0, to=89, orient=HORIZONTAL,
-              command=lambda val: self.on_threshold_change(val, update_callback, 0)).pack()
+        hue_scale = Scale(config_frame, from_=0, to=89, orient=HORIZONTAL,
+                          command=lambda val: self.on_threshold_change(val, update_callback, 0))
+        hue_scale.set(self.hue_threshold)
+        hue_scale.pack()
 
         Label(config_frame, text="Saturation Threshold:").pack()
-        Scale(config_frame, from_=0, to=128, orient=HORIZONTAL,
-              command=lambda val: self.on_threshold_change(val, update_callback, 1)).pack()
+        sat_scale = Scale(config_frame, from_=0, to=128, orient=HORIZONTAL,
+                          command=lambda val: self.on_threshold_change(val, update_callback, 1))
+        sat_scale.set(self.saturation_threshold)
+        sat_scale.pack()
 
         Label(config_frame, text="Value Threshold:").pack()
-        Scale(config_frame, from_=0, to=128, orient=HORIZONTAL,
-              command=lambda val: self.on_threshold_change(val, update_callback, 2)).pack()
+        val_scale = Scale(config_frame, from_=0, to=128, orient=HORIZONTAL,
+                          command=lambda val: self.on_threshold_change(val, update_callback, 2))
+        val_scale.set(self.value_threshold)
+        val_scale.pack()
         
     def on_mouse_click(self, event, x, y, flags, param, image, source=None):
         # Handle the mouse click event
@@ -111,8 +117,10 @@ class ContrastFilter(BaseFilter):
 
         # Creating a slider for the contrast level within the config_frame
         Label(config_frame, text="Contrast Level:").pack()
-        Scale(config_frame, from_=0.5, to=3.0, resolution=0.1, orient=HORIZONTAL,
-              command=lambda val: self.on_contrast_change(val, update_callback)).pack()
+        contrast_scale = Scale(config_frame, from_=0.0, to=3.0, resolution=0.1, orient=HORIZONTAL,
+                               command=lambda val: self.on_contrast_change(val, update_callback))
+        contrast_scale.set(self.config['Contrast'])
+        contrast_scale.pack()
 
     def on_contrast_change(self, val, update_callback):
         self.config['Contrast'] = float(val)
@@ -142,8 +150,10 @@ class SaturationFilter(BaseFilter):
 
         # Creating a slider for the saturation level within the config_frame
         Label(config_frame, text="Saturation Level:").pack()
-        Scale(config_frame, from_=0.0, to=3.0, resolution=0.1, orient=HORIZONTAL,
-              command=lambda val: self.on_saturation_change(val, update_callback)).pack()
+        sat_scale = Scale(config_frame, from_=0.0, to=3.0, resolution=0.1, orient=HORIZONTAL,
+                          command=lambda val: self.on_saturation_change(val, update_callback))
+        sat_scale.set(self.config['Saturation'])
+        sat_scale.pack()
 
     def on_saturation_change(self, val, update_callback):
         self.config['Saturation'] = float(val)
