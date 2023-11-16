@@ -17,6 +17,7 @@ class HSVFilter(BaseFilter):
 
     def __init__(self):
         super().__init__()
+        self.config = {'HSV_ranges': [{'HSV_min':[0,0,0], 'HSV_max':[179,255,255]}]}
         self.hue_threshold = 20
         self.saturation_threshold = 20
         self.value_threshold = 20
@@ -31,15 +32,15 @@ class HSVFilter(BaseFilter):
         # Creating sliders for each HSV component within the config_frame
         Label(config_frame, text="Hue Threshold:").pack()
         Scale(config_frame, from_=0, to=89, orient=HORIZONTAL,
-              command=lambda val: self.on_hue_threshold_change(val, update_callback)).pack()
+              command=lambda val: self.on_threshold_change(val, update_callback, 0)).pack()
 
         Label(config_frame, text="Saturation Threshold:").pack()
         Scale(config_frame, from_=0, to=128, orient=HORIZONTAL,
-              command=lambda val: self.on_saturation_threshold_change(val, update_callback)).pack()
+              command=lambda val: self.on_threshold_change(val, update_callback, 1)).pack()
 
         Label(config_frame, text="Value Threshold:").pack()
         Scale(config_frame, from_=0, to=128, orient=HORIZONTAL,
-              command=lambda val: self.on_value_threshold_change(val, update_callback)).pack()
+              command=lambda val: self.on_threshold_change(val, update_callback, 2)).pack()
         
     def on_mouse_click(self, event, x, y, flags, param, image, source=None):
         # Handle the mouse click event
@@ -48,44 +49,51 @@ class HSVFilter(BaseFilter):
             self.update_HSV_range()
 
     def update_HSV_range(self):
-        if self.clicked_color is None:
-            return
+        if self.clicked_color is not None:
+            # Convert the BGR color to HSV color space
+            bgr_color = np.uint8([[self.clicked_color]])
+            hsv_color = cv.cvtColor(bgr_color, cv.COLOR_BGR2HSV)[0][0]
 
-        # Convert the BGR color to HSV color space
-        bgr_color = np.uint8([[self.clicked_color]])
-        hsv_color = cv.cvtColor(bgr_color, cv.COLOR_BGR2HSV)[0][0]
+            # Calculate the minimum and maximum HSV values, wrapping the Hue
+            hue_min = (hsv_color[0] - self.hue_threshold) % 180
+            hue_max = (hsv_color[0] + self.hue_threshold) % 180
+            sat_min = max(hsv_color[1] - self.saturation_threshold, 0)
+            sat_max = min(hsv_color[1] + self.saturation_threshold, 255)
+            val_min = max(hsv_color[2] - self.value_threshold, 0)
+            val_max = min(hsv_color[2] + self.value_threshold, 255)
 
-        # Calculate the minimum and maximum HSV values
-        hue_min = max(hsv_color[0] - self.hue_threshold, 0)
-        hue_max = min(hsv_color[0] + self.hue_threshold, 180)
-        sat_min = max(hsv_color[1] - self.saturation_threshold, 0)
-        sat_max = min(hsv_color[1] + self.saturation_threshold, 255)
-        val_min = max(hsv_color[2] - self.value_threshold, 0)
-        val_max = min(hsv_color[2] + self.value_threshold, 255)
-
-        self.HSV_range = [(hue_min, sat_min, val_min), (hue_max, sat_max, val_max)]
+            # If the range includes the wrap-around, split into two ranges
+            if hue_min > hue_max:
+                self.config['HSV_ranges'] = [
+                    {"HSV_min": [hue_min, sat_min, val_min], "HSV_max": [179, sat_max, val_max]},
+                    {"HSV_min": [0, sat_min, val_min], "HSV_max": [hue_max, sat_max, val_max]}
+                ]
+            else:
+                self.config['HSV_ranges'] = [{"HSV_min": [hue_min, sat_min, val_min], "HSV_max": [hue_max, sat_max, val_max]}]
 
     def apply(self, image):
-        if self.HSV_range is None:
+        if not self.config['HSV_ranges']:
             return image
 
-        lower_bound, upper_bound = self.HSV_range
+        # Initialize a mask for all zeros (no pixels selected)
+        final_mask = np.zeros(image.shape[:2], dtype=np.uint8)
+
         hsv_image = cv.cvtColor(image, cv.COLOR_BGR2HSV)
-        mask = cv.inRange(hsv_image, np.array(lower_bound), np.array(upper_bound))
-        return cv.bitwise_and(image, image, mask=mask)
+        for range in self.config['HSV_ranges']:
+            lower_bound = np.array(range['HSV_min'], dtype=np.uint8)
+            upper_bound = np.array(range['HSV_max'], dtype=np.uint8)
+            current_mask = cv.inRange(hsv_image, lower_bound, upper_bound)
+            final_mask = cv.bitwise_or(final_mask, current_mask)
 
-    def on_hue_threshold_change(self, val, update_callback):
-        self.hue_threshold = int(val)
-        self.update_HSV_range()
-        update_callback()
+        return cv.bitwise_and(image, image, mask=final_mask)
 
-    def on_saturation_threshold_change(self, val, update_callback):
-        self.saturation_threshold = int(val)
-        self.update_HSV_range()
-        update_callback()
-
-    def on_value_threshold_change(self, val, update_callback):
-        self.value_threshold = int(val)
+    def on_threshold_change(self, val, update_callback, h_s_v):
+        if h_s_v == 0:
+            self.hue_threshold = int(val)
+        elif h_s_v == 1:
+            self.saturation_threshold = int(val)
+        else:
+            self.value_threshold = int(val)
         self.update_HSV_range()
         update_callback()
 
@@ -94,7 +102,7 @@ class ContrastFilter(BaseFilter):
 
     def __init__(self):
         super().__init__()
-        self.contrast_level = 1.0  # Default contrast level
+        self.config = {'Contrast':1.0}
 
     def configure(self, config_frame, update_callback):
         # Clear any existing widgets in the configuration frame
@@ -107,7 +115,7 @@ class ContrastFilter(BaseFilter):
               command=lambda val: self.on_contrast_change(val, update_callback)).pack()
 
     def on_contrast_change(self, val, update_callback):
-        self.contrast_level = float(val)
+        self.config['Contrast'] = float(val)
         update_callback()
 
     def apply(self, image):
@@ -115,7 +123,7 @@ class ContrastFilter(BaseFilter):
         image_float = image.astype(np.float32)
 
         # Apply the contrast formula
-        image_adjusted = image_float * self.contrast_level
+        image_adjusted = image_float * self.config['Contrast']
 
         # Clip values to the valid range (0 to 255) and convert back to uint8
         image_adjusted = np.clip(image_adjusted, 0, 255).astype(np.uint8)
@@ -125,7 +133,7 @@ class ContrastFilter(BaseFilter):
 class SaturationFilter(BaseFilter):
     def __init__(self):
         super().__init__()
-        self.saturation_level = 1.0  # Default saturation level
+        self.config = {'Saturation':1.0}
 
     def configure(self, config_frame, update_callback):
         # Clear any existing widgets in the configuration frame
@@ -138,16 +146,16 @@ class SaturationFilter(BaseFilter):
               command=lambda val: self.on_saturation_change(val, update_callback)).pack()
 
     def on_saturation_change(self, val, update_callback):
-        self.saturation_level = float(val)
+        self.config['Saturation'] = float(val)
         update_callback()
 
     def apply(self, image):
-        if self.saturation_level == 1.0:  # No change in saturation
+        if self.config['Saturation'] == 1.0:  # No change in saturation
             return image
 
         # Convert to HSV, adjust saturation, and convert back to BGR
         hsv_image = cv.cvtColor(image, cv.COLOR_BGR2HSV).astype("float32")
-        hsv_image[..., 1] *= self.saturation_level
+        hsv_image[..., 1] *= self.config['Saturation']
         hsv_image[..., 1] = np.clip(hsv_image[..., 1], 0, 255)
         adjusted_image = cv.cvtColor(hsv_image.astype("uint8"), cv.COLOR_HSV2BGR)
         return adjusted_image
