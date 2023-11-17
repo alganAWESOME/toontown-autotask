@@ -11,7 +11,30 @@ class BaseFilter:
 
     def apply(self, image):
         raise NotImplementedError
-    
+
+    def serialize_config(self):
+        # Convert NumPy types to native Python types for JSON serialization
+        config_serializable = {}
+        for key, value in self.config.items():
+            if isinstance(value, np.ndarray):
+                # Convert numpy arrays to lists
+                config_serializable[key] = value.tolist()
+            elif isinstance(value, (np.int_, np.intc, np.intp, np.int8, np.int16, np.int32, np.int64,
+                                    np.uint8, np.uint16, np.uint32, np.uint64)):
+                # Convert numpy integers to Python int
+                config_serializable[key] = int(value)
+            elif isinstance(value, (np.float_, np.float16, np.float32, np.float64)):
+                # Convert numpy floats to Python float
+                config_serializable[key] = float(value)
+            else:
+                # Assume the value is already serializable
+                config_serializable[key] = value
+
+        return {
+            "type": self.__class__.__name__,
+            "config": config_serializable
+        }
+
 class HSVFilter(BaseFilter):
     name = "HSV Filter"
 
@@ -102,6 +125,20 @@ class HSVFilter(BaseFilter):
             self.value_threshold = int(val)
         self.update_HSV_range()
         update_callback()
+
+    def serialize_config(self):
+        # for JSON serialization
+        serializable_ranges = []
+        for hsv_range in self.config['HSV_ranges']:
+            serializable_range = {}
+            for key, value in hsv_range.items():
+                serializable_range[key] = [int(v) for v in value]
+            serializable_ranges.append(serializable_range)
+
+        return {
+            "type": self.__class__.__name__,
+            "config": {"HSV_ranges": serializable_ranges}
+        }
 
 class ContrastFilter(BaseFilter):
     name = "Contrast Filter"

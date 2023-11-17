@@ -1,12 +1,12 @@
 import sys
 sys.path.append(sys.path[0] + '/..')
 import cv2 as cv
-import numpy as np
 from tkinter import *
 from window_capture import WindowCapture
 from filters import *
+import json, os
 
-class GameColorFilter:
+class FilterCreator:
     def __init__(self, window_name):
         self.window_capture = WindowCapture(window_name)
         self.filter_options = ['HSV Filter', 'Contrast Filter', 'Saturation']
@@ -31,11 +31,15 @@ class GameColorFilter:
         self.config_frame.pack(side=BOTTOM)
         self.filter_list.bind('<<ListboxSelect>>', lambda e: self.update_config_frame())
 
-        # Add "Move Up" and "Move Down" buttons
+        # Add "Move Up", "Move Down", "Delete" and "Save Filter" buttons
         Button(self.root, text="Move Up", command=self.move_filter_up).pack()
         Button(self.root, text="Move Down", command=self.move_filter_down).pack()
-
         Button(self.root, text='Delete', command=self.delete_filter).pack()
+        Button(self.root, text="Save Filter", command=self.save_filters).pack()
+
+        # Entry to name the filter preset
+        self.preset_name_entry = Entry(self.root)
+        self.preset_name_entry.pack()
 
     def add_filter(self):
         filter_window = Toplevel(self.root)
@@ -149,8 +153,42 @@ class GameColorFilter:
                 selected_filter.on_mouse_click(event, x, y, flags, param, source_image)
                 self.apply_filters()
 
+    def save_filters(self):
+        preset_name = self.preset_name_entry.get()
+        if not preset_name:
+            print("Please enter a name for the preset.")
+            return
+
+        # Construct the preset data
+        preset_data = [filter.serialize_config() for filter in self.filters]
+
+        # Path to the filters.json file
+        file_path = 'filters.json'
+
+        # Check if the file exists and update or add the preset
+        if os.path.exists(file_path):
+            with open(file_path, 'r+') as file:
+                data = json.load(file)
+
+                # Update if the preset already exists, else add a new preset
+                if preset_name in data:
+                    data[preset_name] = preset_data
+                else:
+                    data.update({preset_name: preset_data})
+
+                # Write the updated data back to the file
+                file.seek(0)
+                json.dump(data, file, indent=4)
+                file.truncate()
+        else:
+            # Create a new file with the preset
+            with open(file_path, 'w') as file:
+                json.dump({preset_name: preset_data}, file, indent=4)
+
+        print(f"Preset '{preset_name}' saved.")
+
 def main():
-    color_filter = GameColorFilter("Toontown Offline")
+    color_filter = FilterCreator("Toontown Offline")
     color_filter.start()
 
 if __name__ == "__main__":
