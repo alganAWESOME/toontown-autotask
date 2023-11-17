@@ -3,13 +3,12 @@ sys.path.append(sys.path[0] + '/..')
 import cv2 as cv
 from tkinter import *
 from window_capture import WindowCapture
-from filters import *
+import filters
 import json, os
 
 class FilterCreator:
     def __init__(self, window_name):
         self.window_capture = WindowCapture(window_name)
-        self.filter_options = ['HSV Filter', 'Contrast Filter', 'Saturation']
         self.filters = []  # List of filter objects
         self.init_tkinter()
         self.current_screenshot = None
@@ -40,26 +39,35 @@ class FilterCreator:
         # Entry to name the filter preset
         self.preset_name_entry = Entry(self.root)
         self.preset_name_entry.pack()
-
+            
     def add_filter(self):
         filter_window = Toplevel(self.root)
         filter_window.title("Select Filter Type")
 
+        # List all attributes of the filters module
+        filter_options = [attr for attr in dir(filters) 
+              if isinstance(getattr(filters, attr), type) and 
+              getattr(filters, attr).__module__ == filters.__name__]
+
         # Dynamically create buttons for each filter type
-        for option in self.filter_options: 
+        for option in filter_options:
             Button(filter_window, text=option, 
-                   command=lambda name=option: self.create_filter(name, filter_window)).pack()
+                command=lambda name=option: self.create_filter(name, filter_window)).pack()
 
     def create_filter(self, filter_name, filter_window):
-        if filter_name == "HSV Filter":
-            new_filter = HSVFilter()
-        elif filter_name == "Contrast Filter":
-            new_filter = ContrastFilter()
-        elif filter_name == 'Saturation':
-            new_filter = SaturationFilter()
-        else:
-            raise ValueError("Unknown filter type")
+        try:
+            # Get the class from the filters module using the filter_name string
+            filter_class = getattr(filters, filter_name)
 
+            # Instantiate the filter class
+            new_filter = filter_class()
+        except AttributeError:
+            # Raised if filter_name does not correspond to a class in filters module
+            raise ValueError("Unknown filter type") from None
+        except Exception as e:
+            # Handle other potential errors during instantiation
+            raise e
+        
         self.filters.append(new_filter)
         self.filter_list.insert(END, filter_name)
         filter_window.destroy()
