@@ -5,4 +5,3 @@ __pycache__/
 object-detection-model/
 *.ipynb
 text_detector.py
-filters.json

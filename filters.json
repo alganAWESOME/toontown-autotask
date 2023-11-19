@@ -1,0 +1,114 @@
+{
+    "ttc-central-hub": [
+        {
+            "type": "HSVFilter",
+            "config": {
+                "HSV_ranges": [
+                    {
+                        "center": [
+                            30,
+                            72,
+                            241
+                        ],
+                        "thresholds": [
+                            0,
+                            4,
+                            79
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "type": "DilationFilter",
+            "config": {
+                "dilation_size": 6
+            }
+        },
+        {
+            "type": "ErosionFilter",
+            "config": {
+                "erosion_size": 10
+            }
+        },
+        {
+            "type": "DilationFilter",
+            "config": {
+                "dilation_size": 10
+            }
+        },
+        {
+            "type": "BrightnessCountFilter",
+            "config": {
+                "brightness_threshold": 0,
+                "pixel_count_threshold": 735
+            }
+        },
+        {
+            "type": "ThresholdFilter",
+            "config": {
+                "threshold_value": 0,
+                "max_value": 255
+            }
+        }
+    ],
+    "ttc-toonhq": [
+        {
+            "type": "HSVFilter",
+            "config": {
+                "HSV_ranges": [
+                    {
+                        "center": [
+                            90,
+                            171,
+                            58
+                        ],
+                        "thresholds": [
+                            0,
+                            90,
+                            83
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "type": "DilationFilter",
+            "config": {
+                "dilation_size": 4
+            }
+        },
+        {
+            "type": "ErosionFilter",
+            "config": {
+                "erosion_size": 4
+            }
+        },
+        {
+            "type": "ThresholdFilter",
+            "config": {
+                "threshold_value": 0,
+                "max_value": 255
+            }
+        },
+        {
+            "type": "BrightnessCountFilter",
+            "config": {
+                "brightness_threshold": 128,
+                "pixel_count_threshold": 294
+            }
+        },
+        {
+            "type": "ErosionFilter",
+            "config": {
+                "erosion_size": 3
+            }
+        },
+        {
+            "type": "DilationFilter",
+            "config": {
+                "dilation_size": 7
+            }
+        }
+    ]
+}
