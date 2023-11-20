@@ -110,5 +110,174 @@
                 "dilation_size": 7
             }
         }
+    ],
+    "ttc-street-walkable": [
+        {
+            "type": "HSVFilter",
+            "config": {
+                "HSV_ranges": [
+                    {
+                        "center": [
+                            19,
+                            102,
+                            225
+                        ],
+                        "thresholds": [
+                            0,
+                            8,
+                            15
+                        ]
+                    },
+                    {
+                        "center": [
+                            18,
+                            101,
+                            229
+                        ],
+                        "thresholds": [
+                            0,
+                            8,
+                            15
+                        ]
+                    },
+                    {
+                        "center": [
+                            19,
+                            113,
+                            210
+                        ],
+                        "thresholds": [
+                            0,
+                            11,
+                            45
+                        ]
+                    },
+                    {
+                        "center": [
+                            21,
+                            98,
+                            217
+                        ],
+                        "thresholds": [
+                            1,
+                            4,
+                            11
+                        ]
+                    },
+                    {
+                        "center": [
+                            22,
+                            99,
+                            193
+                        ],
+                        "thresholds": [
+                            0,
+                            4,
+                            19
+                        ]
+                    },
+                    {
+                        "center": [
+                            22,
+                            116,
+                            211
+                        ],
+                        "thresholds": [
+                            0,
+                            23,
+                            38
+                        ]
+                    },
+                    {
+                        "center": [
+                            22,
+                            88,
+                            217
+                        ],
+                        "thresholds": [
+                            0,
+                            4,
+                            23
+                        ]
+                    },
+                    {
+                        "center": [
+                            18,
+                            111,
+                            210
+                        ],
+                        "thresholds": [
+                            0,
+                            15,
+                            8
+                        ]
+                    },
+                    {
+                        "center": [
+                            21,
+                            96,
+                            196
+                        ],
+                        "thresholds": [
+                            0,
+                            0,
+                            0
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "type": "ThresholdFilter",
+            "config": {
+                "threshold_value": 127,
+                "max_value": 255
+            }
+        },
+        {
+            "type": "ErosionFilter",
+            "config": {
+                "erosion_size": 4
+            }
+        },
+        {
+            "type": "DilationFilter",
+            "config": {
+                "dilation_size": 5
+            }
+        },
+        {
+            "type": "ErosionFilter",
+            "config": {
+                "erosion_size": 8
+            }
+        },
+        {
+            "type": "CropFilter",
+            "config": {
+                "crops": [
+                    {
+                        "top_left": [
+                            378,
+                            480
+                        ],
+                        "bottom_right": [
+                            266,
+                            318
+                        ]
+                    },
+                    {
+                        "top_left": [
+                            230,
+                            273
+                        ],
+                        "bottom_right": [
+                            417,
+                            367
+                        ]
+                    }
+                ]
+            }
+        }
     ]
 }

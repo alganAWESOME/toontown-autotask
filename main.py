@@ -10,12 +10,14 @@ def main():
     wincap.start()
 
     facing_x = wincap.w // 2
-    turn_threshold = 100
+    turn_threshold = 30
     reached_threshold = 20000
     searching_target = False
 
-    hub_det = ApplyFilter('ttc-central-hub')
-    toonhq_det = ApplyFilter('ttc-toonhq')
+    pg.PAUSE = 0
+    up_pressed, left_pressed, right_pressed = True, False, False
+
+    walkable_det = ApplyFilter('ttc-street-walkable')
 
     sleep(2)
     pg.keyDown('up')
@@ -24,33 +26,31 @@ def main():
             continue
         screenshot = wincap.screenshot
 
-        target = hub_det.apply(screenshot)
-        toonhq = toonhq_det.apply(screenshot)
+        target = walkable_det.apply(screenshot)
 
-        if mean_coord(toonhq) is not None:
-            searching_target = False # no longer searching for toonhq
-            pg.keyDown('up')
-            target = toonhq
-
-        if np.count_nonzero(target) > reached_threshold:
-            # reached target so now we're in searching mode for the next target
+        coord = mean_coord(target)
+        if coord is None:
             searching_target = True
+        else:
+            target_x, _ = coord
+            searching_target = False
 
         if not searching_target:
-            target_x, _ = mean_coord(target)
+            pg.keyDown('up')
             if facing_x < target_x - turn_threshold:
                 pg.keyUp('left')
                 pg.keyDown('right')
-            elif facing_x > target_x + turn_threshold:
+            elif facing_x > target_x + turn_threshold:    
                 pg.keyUp('right')
                 pg.keyDown('left')
             else:
                 pg.keyUp('right')
                 pg.keyUp('left')
-        elif searching_target:
+            print(f'off_center_by={facing_x - target_x}')
+        else:    
             pg.keyUp('up')
-            pg.keyUp('left')
-            pg.keyDown('right')
+            pg.keyUp('right')
+            pg.keyDown('left')
                 
         cv.imshow("game",target)
         key = cv.waitKey(1)
