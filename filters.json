@@ -279,5 +279,374 @@
                 ]
             }
         }
+    ],
+    "cogs": [
+        {
+            "type": "BlackFilter",
+            "config": {}
+        },
+        {
+            "type": "CropFilter",
+            "config": {
+                "crops": [
+                    {
+                        "top_left": [
+                            106,
+                            398
+                        ],
+                        "bottom_right": [
+                            526,
+                            171
+                        ]
+                    },
+                    {
+                        "top_left": [
+                            526,
+                            172
+                        ],
+                        "bottom_right": [
+                            107,
+                            68
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "type": "DilationFilter",
+            "config": {
+                "dilation_size": 2
+            }
+        },
+        {
+            "type": "ErosionFilter",
+            "config": {
+                "erosion_size": 2
+            }
+        },
+        {
+            "type": "DilationFilter",
+            "config": {
+                "dilation_size": 10
+            }
+        }
+    ],
+    "ttc-street-walkable-2": [
+        {
+            "type": "HSVFilter",
+            "config": {
+                "HSV_ranges": [
+                    {
+                        "center": [
+                            21,
+                            93,
+                            223
+                        ],
+                        "thresholds": [
+                            0,
+                            26,
+                            68
+                        ]
+                    },
+                    {
+                        "center": [
+                            22,
+                            120,
+                            174
+                        ],
+                        "thresholds": [
+                            0,
+                            26,
+                            75
+                        ]
+                    },
+                    {
+                        "center": [
+                            22,
+                            90,
+                            220
+                        ],
+                        "thresholds": [
+                            0,
+                            30,
+                            38
+                        ]
+                    },
+                    {
+                        "center": [
+                            19,
+                            102,
+                            225
+                        ],
+                        "thresholds": [
+                            0,
+                            8,
+                            15
+                        ]
+                    },
+                    {
+                        "center": [
+                            18,
+                            101,
+                            229
+                        ],
+                        "thresholds": [
+                            0,
+                            8,
+                            15
+                        ]
+                    },
+                    {
+                        "center": [
+                            19,
+                            113,
+                            210
+                        ],
+                        "thresholds": [
+                            0,
+                            11,
+                            45
+                        ]
+                    },
+                    {
+                        "center": [
+                            21,
+                            98,
+                            217
+                        ],
+                        "thresholds": [
+                            1,
+                            4,
+                            11
+                        ]
+                    },
+                    {
+                        "center": [
+                            22,
+                            99,
+                            193
+                        ],
+                        "thresholds": [
+                            0,
+                            4,
+                            19
+                        ]
+                    },
+                    {
+                        "center": [
+                            22,
+                            116,
+                            211
+                        ],
+                        "thresholds": [
+                            0,
+                            23,
+                            38
+                        ]
+                    },
+                    {
+                        "center": [
+                            22,
+                            88,
+                            217
+                        ],
+                        "thresholds": [
+                            0,
+                            4,
+                            23
+                        ]
+                    },
+                    {
+                        "center": [
+                            18,
+                            111,
+                            210
+                        ],
+                        "thresholds": [
+                            0,
+                            15,
+                            8
+                        ]
+                    },
+                    {
+                        "center": [
+                            21,
+                            96,
+                            196
+                        ],
+                        "thresholds": [
+                            0,
+                            0,
+                            0
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "type": "DilationFilter",
+            "config": {
+                "dilation_size": 6
+            }
+        },
+        {
+            "type": "ErosionFilter",
+            "config": {
+                "erosion_size": 9
+            }
+        },
+        {
+            "type": "DilationFilter",
+            "config": {
+                "dilation_size": 10
+            }
+        },
+        {
+            "type": "CropFilter",
+            "config": {
+                "crops": [
+                    {
+                        "top_left": [
+                            308,
+                            395
+                        ],
+                        "bottom_right": [
+                            333,
+                            468
+                        ]
+                    },
+                    {
+                        "top_left": [
+                            271,
+                            393
+                        ],
+                        "bottom_right": [
+                            372,
+                            428
+                        ]
+                    },
+                    {
+                        "top_left": [
+                            413,
+                            397
+                        ],
+                        "bottom_right": [
+                            239,
+                            330
+                        ]
+                    },
+                    {
+                        "top_left": [
+                            158,
+                            333
+                        ],
+                        "bottom_right": [
+                            499,
+                            262
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "type": "ThresholdFilter",
+            "config": {
+                "threshold_value": 0,
+                "max_value": 255
+            }
+        }
+    ],
+    "ttc-greenery-1": [
+        {
+            "type": "HSVFilter",
+            "config": {
+                "HSV_ranges": [
+                    {
+                        "center": [
+                            38,
+                            192,
+                            155
+                        ],
+                        "thresholds": [
+                            7,
+                            41,
+                            26
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "type": "ErosionFilter",
+            "config": {
+                "erosion_size": 5
+            }
+        },
+        {
+            "type": "DilationFilter",
+            "config": {
+                "dilation_size": 10
+            }
+        },
+        {
+            "type": "ThresholdFilter",
+            "config": {
+                "threshold_value": 135,
+                "max_value": 255
+            }
+        },
+        {
+            "type": "BrightnessCountFilter",
+            "config": {
+                "brightness_threshold": 128,
+                "pixel_count_threshold": 1176
+            }
+        }
+    ],
+    "ttc-streetlamp": [
+        {
+            "type": "HSVFilter",
+            "config": {
+                "HSV_ranges": [
+                    {
+                        "center": [
+                            84,
+                            129,
+                            207
+                        ],
+                        "thresholds": [
+                            3,
+                            34,
+                            135
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "type": "ErosionFilter",
+            "config": {
+                "erosion_size": 3
+            }
+        },
+        {
+            "type": "DilationFilter",
+            "config": {
+                "dilation_size": 3
+            }
+        },
+        {
+            "type": "ThresholdFilter",
+            "config": {
+                "threshold_value": 0,
+                "max_value": 255
+            }
+        },
+        {
+            "type": "DilationFilter",
+            "config": {
+                "dilation_size": 5
+            }
+        }
     ]
 }

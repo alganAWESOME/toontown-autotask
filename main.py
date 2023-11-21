@@ -6,18 +6,23 @@ from apply_filter import ApplyFilter
 import pyautogui as pg
 
 def main():
+    global keys_pressed
     wincap = WindowCapture("Toontown Offline")
     wincap.start()
 
     facing_x = wincap.w // 2
-    turn_threshold = 30
-    reached_threshold = 20000
-    searching_target = False
+
+    facing_threshold = 30
+    reached_threshold = 5000
+    danger_threshold = 10000
+    lost_threshold = 100
+    searching = False
+    danger = False
 
     pg.PAUSE = 0
-    up_pressed, left_pressed, right_pressed = True, False, False
-
+    keys_pressed = {'up':True, 'left':False, 'right':False}
     walkable_det = ApplyFilter('ttc-street-walkable')
+    streetlamp_det = ApplyFilter('ttc-streetlamp')
 
     sleep(2)
     pg.keyDown('up')
@@ -26,38 +31,64 @@ def main():
             continue
         screenshot = wincap.screenshot
 
-        target = walkable_det.apply(screenshot)
+        streetlamps = streetlamp_det.apply(screenshot)
+        walkable = walkable_det.apply(screenshot)
+        target = find_largest_blob(streetlamps, 1)
 
-        coord = mean_coord(target)
-        if coord is None:
-            searching_target = True
+        walkable_pixels = np.count_nonzero(walkable)
+        #print(f"walkable_pixels={walkable_pixels}")
+
+        target_coord = mean_coord(target)
+        if target_coord is None and walkable_pixels < lost_threshold:
+            searching = True
         else:
-            target_x, _ = coord
-            searching_target = False
+            searching = False
 
-        if not searching_target:
+        if target_coord is not None:
+            target_x, _ = target_coord
+        else:
+            try:
+                target_x, _ = mean_coord(walkable_pixels)
+            except:
+                pass
+
+        print(f"searching={searching}")
+
+        if not searching:
+            pg.keyUp('left')
             pg.keyDown('up')
-            if facing_x < target_x - turn_threshold:
-                pg.keyUp('left')
-                pg.keyDown('right')
-            elif facing_x > target_x + turn_threshold:    
-                pg.keyUp('right')
+            if target_x < facing_x - facing_threshold:
                 pg.keyDown('left')
-            else:
                 pg.keyUp('right')
+            elif target_x > facing_x + facing_threshold:
+                pg.keyDown('right')
                 pg.keyUp('left')
-            print(f'off_center_by={facing_x - target_x}')
-        else:    
+            else:
+                pg.keyUp('left')
+                pg.keyUp('right')
+        else:
             pg.keyUp('up')
-            pg.keyUp('right')
             pg.keyDown('left')
                 
         cv.imshow("game",target)
+        cv.imshow('walkable', walkable)
         key = cv.waitKey(1)
         if key == ord('q'):
             wincap.stop()
             cv.destroyAllWindows()
             break
+
+def toggle_key(key, press):
+    global keys_pressed
+
+    if press:
+        if not keys_pressed[key]:
+            pg.keyDown(key)
+            keys_pressed[key] = True
+    else:
+        if keys_pressed[key]:
+            pg.keyUp(key)
+            keys_pressed[key] = False
 
 def mean_coord(image):
     # Ensure the image is in grayscale
@@ -74,6 +105,25 @@ def mean_coord(image):
         return mean_x, mean_y
     else:
         return None  # Return None if there are no white pixels
+
+def find_largest_blob(binary_image, n):
+    # Find all contours in the binary image
+    contours, _ = cv.findContours(binary_image, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+
+    # Calculate the area of each contour and sort them in descending order
+    contours = sorted(contours, key=cv.contourArea, reverse=True)
+
+    # Check if n is within the range of available contours
+    if n - 1 >= len(contours) or n <= 0:
+        return binary_image
+
+    # Create a new blank image
+    nth_largest_blob = np.zeros_like(binary_image)
+
+    # Draw the n-th largest contour (n-1 in zero-indexed Python)
+    cv.drawContours(nth_largest_blob, [contours[n - 1]], -1, (255, 255, 255), -1)
+
+    return nth_largest_blob
 
 if __name__ == "__main__":
     main()

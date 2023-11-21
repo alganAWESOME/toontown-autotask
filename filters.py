@@ -4,9 +4,10 @@ from tkinter import *
 
 class BaseFilter:
     def __init__(self):
-        self.config = None
+        self.config = {}
         self.config_frame = None
         self.update_callback = None
+        self.visible = True
 
     def configure(self):
         raise NotImplementedError
@@ -321,12 +322,12 @@ class ThresholdFilter(BaseFilter):
         _, binary_image = cv.threshold(gray_image, threshold_value, max_value, cv.THRESH_BINARY)
         return binary_image
 
-class BrightnessCountFilter(BaseFilter):
+class MinimumPixelCountFilter(BaseFilter):
     def __init__(self):
         super().__init__()
         # Initialize configuration with default values
         self.config = {
-            'brightness_threshold': 128,
+            'brightness_threshold': 0,
             'pixel_count_threshold': 1000
         }
 
@@ -338,7 +339,7 @@ class BrightnessCountFilter(BaseFilter):
         brightness_scale.set(self.config['brightness_threshold'])
         brightness_scale.pack()
 
-        Label(self.config_frame, text="Pixel Count Threshold:").pack()
+        Label(self.config_frame, text="Minimum Pixel Count:").pack()
         pixel_count_scale = Scale(self.config_frame, from_=0, to=10000, orient=HORIZONTAL,
                                   command=self.on_pixel_count_threshold_change)
         pixel_count_scale.set(self.config['pixel_count_threshold'])
@@ -352,7 +353,7 @@ class BrightnessCountFilter(BaseFilter):
         self.config['pixel_count_threshold'] = int(val)
         self.update_callback()
 
-    def apply(self, image):
+    def apply(self, image, min_threshold=True):
         if len(image.shape) == 2:
             grayscale = image
         else:
@@ -362,10 +363,20 @@ class BrightnessCountFilter(BaseFilter):
         count = cv.countNonZero(cv.threshold(grayscale, self.config['brightness_threshold'], 255, cv.THRESH_BINARY)[1])
 
         # Return original image if count exceeds the pixel count threshold, else return black image
-        if count >= self.config['pixel_count_threshold']:
-            return image
+        if min_threshold:
+            if count >= self.config['pixel_count_threshold']:
+                return image
         else:
-            return np.zeros(image.shape, dtype=image.dtype)
+            if count <= self.config['pixel_count_threshold']:
+                return image
+        return np.zeros(image.shape, dtype=image.dtype)
+
+class MaxPixelCountFilter(MinimumPixelCountFilter):
+    def __init__(self):
+        super().__init__()
+
+    def apply(self, image):
+        super().apply(image, min_threshold=False)
 
 class Grayscale(BaseFilter):
     def __init__(self):
@@ -385,14 +396,14 @@ class CropFilter(BaseFilter):
         self.selected_crop_index = None
         self.temporary_crop_start = None
 
-    def configure(self):
+    def configure(self, mode='Crop'):
         self.crop_listbox = Listbox(self.config_frame)
         self.crop_listbox.pack()
         self.crop_listbox.bind('<<ListboxSelect>>', lambda e: self.on_crop_select(e))
         self._update_crop_listbox()
 
-        Button(self.config_frame, text="Add Crop", command=self.add_crop).pack()
-        Button(self.config_frame, text="Delete Crop", command=self.delete_crop).pack()
+        Button(self.config_frame, text=f"Add {mode}", command=self.add_crop).pack()
+        Button(self.config_frame, text=f"Delete {mode}", command=self.delete_crop).pack()
 
     def _update_crop_listbox(self):
         self.crop_listbox.delete(0, END)
@@ -449,3 +460,74 @@ class CropFilter(BaseFilter):
             "type": self.__class__.__name__,
             "config": {"crops": self.config['crops']}
         }
+
+class BlockFilter(CropFilter):
+    def __init__(self):
+        super().__init__()
+
+    def configure(self, mode='Block'):
+        return super().configure(mode)
+    
+    def apply(self, image):
+        if not self.config['crops']:
+            return image
+
+        # Start with a mask that covers the whole image
+        final_mask = np.ones(image.shape[:2], dtype=np.uint8) * 255
+
+        for crop in self.config['crops']:
+            top_left, bottom_right = crop['top_left'], crop['bottom_right']
+            # Set the cropped areas to zero (black) in the mask
+            cv.rectangle(final_mask, tuple(top_left), tuple(bottom_right), 0, -1)
+
+        # Apply the inverted mask to keep the rest of the image
+        return cv.bitwise_and(image, image, mask=final_mask)
+
+class BlackFilter(BaseFilter):
+    def __init__(self):
+        super().__init__()
+    
+    def configure(self):
+        pass
+    
+    def apply(self, image):
+        # Create a mask where black pixels are marked
+        # Assuming the image is in RGB format
+        black_pixels_mask = (image[:, :, 0] == 0) & \
+                            (image[:, :, 1] == 0) & \
+                            (image[:, :, 2] == 0)
+
+        # Create an empty image in grayscale format
+        filtered_image = np.zeros(image.shape[:2], dtype=np.uint8)
+
+        # Change black pixels in the original image to white in the filtered image
+        filtered_image[black_pixels_mask] = 255
+
+        return filtered_image
+
+class ContourFilter(BaseFilter):
+    def __init__(self):
+        super().__init__()
+
+    def configure(self):
+        pass
+
+    def apply(self, image):
+        # Check if the image is binary
+        if not self._is_binary(image):
+            return image
+
+        # Find contours
+        contours, _ = cv.findContours(image, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+
+        # Draw contours on a blank canvas
+        contour_image = np.zeros_like(image)
+        cv.drawContours(contour_image, contours, -1, (255, 255, 255), thickness=2)
+
+        return contour_image
+
+    def _is_binary(self, image):
+        # Check if the image is binary AND grayscale
+        if len(np.unique(image)) == 2 and len(image.shape) <= 2:
+            return True
+        return False
