@@ -4,25 +4,21 @@ from window_capture import WindowCapture
 from time import sleep
 from apply_filter import ApplyFilter
 import pyautogui as pg
+from random import randint
 
 def main():
-    global keys_pressed
     wincap = WindowCapture("Toontown Offline")
     wincap.start()
 
     facing_x = wincap.w // 2
+    target_x = facing_x - 200
 
-    facing_threshold = 30
-    reached_threshold = 5000
-    danger_threshold = 10000
-    lost_threshold = 100
-    searching = False
-    danger = False
+    cog_dangerous_thresh = 1800
 
     pg.PAUSE = 0
-    keys_pressed = {'up':True, 'left':False, 'right':False}
-    walkable_det = ApplyFilter('ttc-street-walkable')
-    streetlamp_det = ApplyFilter('ttc-streetlamp')
+
+    streetlamp_det = ApplyFilter('mml-walkable-test')
+    cog_detector = ApplyFilter('cogs')
 
     sleep(2)
     pg.keyDown('up')
@@ -31,47 +27,66 @@ def main():
             continue
         screenshot = wincap.screenshot
 
-        streetlamps = streetlamp_det.apply(screenshot)
-        walkable = walkable_det.apply(screenshot)
-        target = find_largest_blob(streetlamps, 1)
-
-        walkable_pixels = np.count_nonzero(walkable)
-        #print(f"walkable_pixels={walkable_pixels}")
-
-        target_coord = mean_coord(target)
-        if target_coord is None and walkable_pixels < lost_threshold:
-            searching = True
-        else:
+        target = streetlamp_det.apply(screenshot)
+        try:
+            target_x, _ = mean_coord(target)
             searching = False
+        except:
+            searching = True
 
-        if target_coord is not None:
-            target_x, _ = target_coord
+        cogs = cog_detector.apply(screenshot)
+        contours, _ = cv.findContours(cogs, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+        contours = sorted(contours, key=cv.contourArea, reverse=True)
+        # print([cv.contourArea(cont) for cont in contours])
+        # print([np.abs(calc_centroid(cont)[0] - facing_x) for cont in contours])
+
+        try:
+            largest = contours[0]
+            largest_area = cv.contourArea(largest)
+            cog_x, cog_y = calc_centroid(largest)
+        except:
+            largest_area = 0
+            cog_x = 0
+
+        diff_x = cog_x - facing_x # if negative turn right
+        if largest_area > 1800 and np.abs(diff_x) < 200:
+            danger = True
         else:
-            try:
-                target_x, _ = mean_coord(walkable_pixels)
-            except:
-                pass
+            danger = False
 
-        print(f"searching={searching}")
+        if searching:
+            print("searching")
+        if danger:
+            print("danger")
 
-        if not searching:
-            pg.keyUp('left')
-            pg.keyDown('up')
-            if target_x < facing_x - facing_threshold:
-                pg.keyDown('left')
-                pg.keyUp('right')
-            elif target_x > facing_x + facing_threshold:
-                pg.keyDown('right')
-                pg.keyUp('left')
+        if True:
+            if not danger:
+                if not searching:
+                    pg.keyDown('up')
+                else:
+                    pg.keyUp('up')
+
+                if target_x < facing_x - 25:
+                    pg.keyDown('left')
+                    pg.keyUp('right')
+                elif target_x > facing_x + 25:
+                    pg.keyDown('right')
+                    pg.keyUp('left')
+                else:
+                    pg.keyUp('right')
+                    pg.keyUp('left')
             else:
-                pg.keyUp('left')
-                pg.keyUp('right')
+                pg.keyDown('up')
+                if diff_x < 0:
+                    pg.keyDown('right')
+                    pg.keyUp('left')
+                else:
+                    pg.keyDown('left')
+                    pg.keyUp('right')
         else:
-            pg.keyUp('up')
-            pg.keyDown('left')
-                
-        cv.imshow("game",target)
-        cv.imshow('walkable', walkable)
+            pass
+        viz = visualise([cogs, target])
+        cv.imshow('visualisation', viz)
         key = cv.waitKey(1)
         if key == ord('q'):
             wincap.stop()
@@ -105,6 +120,10 @@ def mean_coord(image):
         return mean_x, mean_y
     else:
         return None  # Return None if there are no white pixels
+    
+def calc_centroid(contour):
+    M = cv.moments(contour)
+    return int(M['m10'] / M['m00']), int(M['m01'] / M['m00'])
 
 def find_largest_blob(binary_image, n):
     # Find all contours in the binary image
@@ -124,6 +143,16 @@ def find_largest_blob(binary_image, n):
     cv.drawContours(nth_largest_blob, [contours[n - 1]], -1, (255, 255, 255), -1)
 
     return nth_largest_blob
+
+def visualise(binary_images):
+    colors = [(0,0,255), (255,0,0), (0, 255, 0), (0, 128, 255), (0,255,255), (0,255,128)]
+    viz = np.zeros_like(cv.cvtColor(binary_images[0], cv.COLOR_GRAY2BGR))
+    for i, img in enumerate(binary_images):
+        viz[img != 0] = colors[i]
+    return viz
+
+
+
 
 if __name__ == "__main__":
     main()
