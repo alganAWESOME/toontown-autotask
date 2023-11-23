@@ -60,19 +60,6 @@ def main():
             target_pos = minimap_graph.nodes[path[target_node]]['pos']
             print(f"path={path}")
 
-        # turning logic
-        angle = calc_angle_to_target(pos, direction, target_pos)
-        print(f"angle_to_target={angle}")
-        if angle < -angle_thresh:
-            pg.keyDown('left')
-            pg.keyUp('right')
-        elif angle > angle_thresh:
-            pg.keyDown('right')
-            pg.keyUp('left')
-        else:
-            pg.keyUp('left')
-            pg.keyUp('right')
-
         # update target node logic
         if distance(pos, target_pos) < node_reached_thresh:
             target_node += 1
@@ -92,45 +79,37 @@ def main():
         else:
             danger = False
 
-        # if searching:
-        #     print("searching")
-        # if danger:
-        #     print("danger")
+        print(f"danger={danger}")
 
-        if False:
-            if not danger:
-                if not searching:
-                    pg.keyDown('up')
-                else:
-                    pg.keyUp('up')
+        #danger = False
 
-                if target_x < facing_x - 25:
-                    pg.keyDown('left')
-                    pg.keyUp('right')
-                elif target_x > facing_x + 25:
-                    pg.keyDown('right')
-                    pg.keyUp('left')
-                else:
-                    pg.keyUp('right')
-                    pg.keyUp('left')
+        # turning logic
+        if not danger:
+            angle = calc_angle_to_target(pos, direction, target_pos)
+            #print(f"angle_to_target={angle}")
+            if angle < -angle_thresh / 2:
+                pg.keyDown('left')
+                pg.keyUp('right')
+            elif angle > angle_thresh / 2:
+                pg.keyDown('right')
+                pg.keyUp('left')
             else:
-                pg.keyDown('up')
-                if diff_x < 0:
-                    pg.keyDown('right')
-                    pg.keyUp('left')
-                else:
-                    pg.keyDown('left')
-                    pg.keyUp('right')
+                pg.keyUp('left')
+                pg.keyUp('right')
         else:
-            pass
-        #viz = visualise([cogs, target])
-        #cv.imshow('visualisation', viz)
+            if diff_x <= 0:
+                pg.keyDown('right')
+                pg.keyUp('left')
+            else:
+                pg.keyDown('left')
+                pg.keyUp('right')                
 
         minimap_viz = path_viz.copy()
         color=(255, 0, 255)
         thickness=2
         endpoint = (1*pos[0] + 1*direction[0], 1*pos[1] + 1*direction[1])
         cv.arrowedLine(minimap_viz, pos, endpoint, color, thickness)
+        cv.imshow('cogs', cogs)
         cv.imshow('minimap', minimap_viz)
         key = cv.waitKey(1)
         if key == ord('q'):
