@@ -4,7 +4,9 @@ from window_capture import WindowCapture
 from time import sleep
 from apply_filter import ApplyFilter
 import pyautogui as pg
-from random import randint
+import json
+import networkx as nx
+from math import sqrt
 
 def main():
     wincap = WindowCapture("Toontown Offline")
@@ -21,7 +23,14 @@ def main():
     cog_detector = ApplyFilter('cogs')
     arrow_detector = ApplyFilter('punchlineplace-arrow')
 
-    direction = np.array([1,0])
+    # minimap related
+    pos, direction = np.array([0,0]), np.array([1,0])
+    minimap_graph = load_graph_to_networkx('graphs.json', "ttc-punchlineplace")
+    path_calculated = False
+    path_viz = None
+    angle_thresh = (1/6) * np.pi # if angle below (this/2) turn left
+    node_reached_thresh = 10
+    target_node = None
 
     sleep(2)
     pg.keyDown('up')
@@ -40,9 +49,35 @@ def main():
         cogs = cog_detector.apply(screenshot)
         contours, _ = cv.findContours(cogs, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
         contours = sorted(contours, key=cv.contourArea, reverse=True)
-        # print([cv.contourArea(cont) for cont in contours])
-        # print([np.abs(calc_centroid(cont)[0] - facing_x) for cont in contours])
 
+        arrow = arrow_detector.apply(screenshot)
+        pos, direction = detect_arrow(arrow, direction)
+        if not path_calculated:
+            path = calculate_path(minimap_graph, pos, 9)
+            path_calculated = True
+            path_viz = draw_path_on_image(minimap_graph, path)
+            target_node = 0
+            target_pos = minimap_graph.nodes[path[target_node]]['pos']
+            print(f"path={path}")
+
+        # turning logic
+        angle = calc_angle_to_target(pos, direction, target_pos)
+        print(f"angle_to_target={angle}")
+        if angle < -angle_thresh:
+            pg.keyDown('left')
+            pg.keyUp('right')
+        elif angle > angle_thresh:
+            pg.keyDown('right')
+            pg.keyUp('left')
+        else:
+            pg.keyUp('left')
+            pg.keyUp('right')
+
+        # update target node logic
+        if distance(pos, target_pos) < node_reached_thresh:
+            target_node += 1
+            target_pos = minimap_graph.nodes[path[target_node]]['pos']
+        
         try:
             largest = contours[0]
             largest_area = cv.contourArea(largest)
@@ -91,20 +126,82 @@ def main():
         #viz = visualise([cogs, target])
         #cv.imshow('visualisation', viz)
 
-        arrow_viz = np.zeros_like(screenshot)
-        arrow = arrow_detector.apply(screenshot)
-
-        pos, direction = detect_arrow(arrow, direction)
+        minimap_viz = path_viz.copy()
         color=(255, 0, 255)
         thickness=2
         endpoint = (1*pos[0] + 1*direction[0], 1*pos[1] + 1*direction[1])
-        cv.arrowedLine(arrow_viz, pos, endpoint, color, thickness)
-        cv.imshow('arrow', arrow_viz)
+        cv.arrowedLine(minimap_viz, pos, endpoint, color, thickness)
+        cv.imshow('minimap', minimap_viz)
         key = cv.waitKey(1)
         if key == ord('q'):
             wincap.stop()
             cv.destroyAllWindows()
             break
+
+def calc_angle_to_target(pos, direction, target_pos):
+    def unit_vector(vector):
+        return vector / np.linalg.norm(vector)
+
+    def angle_between_old(v1, v2):
+        v1_u = unit_vector(v1)
+        v2_u = unit_vector(v2)
+        return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
+    
+    def angle_between(v1, v2):
+        return np.arctan2(v1[1], v1[0]) - np.arctan2(v2[1], v2[0])
+    
+    direction_to_targ = (target_pos[0] - pos[0], target_pos[1] - pos[1])
+
+    return angle_between(direction_to_targ, direction)
+
+def load_graph_to_networkx(file_path, graph_name):
+    with open(file_path, 'r') as file:
+        data = json.load(file)
+    
+    if graph_name not in data:
+        print(f"Graph '{graph_name}' not found in the file.")
+        return None
+
+    G = nx.Graph()
+    nodes = data[graph_name]['nodes']
+    edges = data[graph_name]['edges']
+
+    for node in nodes:
+        G.add_node(node['id'], pos=(node['x'], node['y']))
+
+    for edge in edges:
+        G.add_edge(edge['start'], edge['end'], weight=edge['distance'])
+
+    return G
+
+def distance(p1, p2):
+    return sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
+
+def calculate_path(G, start_point, final_node):
+    if G is None:
+        print("Graph is not loaded.")
+        return []
+
+    # Find the nearest node to the start point
+    nearest_node = None
+    min_distance = float('inf')
+    for node, data in G.nodes(data=True):
+        dist = distance(start_point, data['pos'])
+        if dist < min_distance:
+            nearest_node = node
+            min_distance = dist
+
+    if nearest_node is None:
+        print("No nearest node found.")
+        return []
+
+    # Calculate shortest path
+    try:
+        path = nx.shortest_path(G, source=nearest_node, target=final_node, weight='weight')
+        return path
+    except nx.NetworkXNoPath:
+        print("No path found.")
+        return []
 
 def detect_arrow(filtered, prev_direction):
     arrow_pixels = np.argwhere(filtered == 255)
@@ -123,74 +220,34 @@ def detect_arrow(filtered, prev_direction):
 
     return tuple(map(int, pos_estimate)), tuple(map(int, direction_estimate))
 
-def detect_arrow_new(filtered):
-    arrow_pixels = np.argwhere(filtered == 255)
-    mean_pixel = np.mean(arrow_pixels, axis=0)
-    centered_data = arrow_pixels - mean_pixel
+def draw_path_on_image(G, path, image_size=(481, 640, 3)):
+    # Create a blank image
+    img = np.zeros(image_size, np.uint8)
 
-    _, _, Vt = np.linalg.svd(centered_data, full_matrices=False)
-    principal_component = Vt[0]
+    if not path or G is None:
+        print("No path or graph provided.")
+        return img
 
-    # Calculate the projections on the principal component
-    projections = np.dot(centered_data, principal_component)
-    print(f"len_projects={len(projections)}")
+    # Draw the path
+    for i in range(len(path) - 1):
+        node_start = path[i]
+        node_end = path[i + 1]
 
-    # Unweighted mean of projections
-    unweighted_mean = np.mean(projections)
+        if node_start not in G or node_end not in G:
+            print(f"Node {node_start} or {node_end} not in the graph.")
+            continue
 
-    # Weighted mean of projections
-    unique, counts = np.unique(projections, return_counts=True)
-    weighted_mean = np.sum(unique * counts) / np.sum(counts)
+        start_pos = G.nodes[node_start]['pos']
+        end_pos = G.nodes[node_end]['pos']
 
-    # Map the means back to original space
-    unweighted_mean_coord = mean_pixel + unweighted_mean * principal_component
-    weighted_mean_coord = mean_pixel + weighted_mean * principal_component
+        # Draw line for the edge
+        cv.line(img, start_pos, end_pos, (0, 255, 0), 2)
 
-    # Calculate the directional vector
-    direction_vector = weighted_mean_coord - unweighted_mean_coord
-    normalized_direction_vector = direction_vector / np.linalg.norm(direction_vector)
+        # Draw circles for the nodes
+        cv.circle(img, start_pos, 5, (255, 0, 0), -1)
+        cv.circle(img, end_pos, 5, (255, 0, 0), -1)
 
-    pos_estimate = mean_pixel[::-1]
-
-    print(f"pos={pos_estimate}")
-    print(f"direction={normalized_direction_vector}")
-
-    return tuple(map(int, pos_estimate)), tuple(map(int, normalized_direction_vector))
-
-def detect_arrow_pos_and_direction(arrow_image):
-    # Find coordinates of all white pixels
-    y_coords, x_coords = np.where(arrow_image == 255)
-
-    # Calculate the unweighted mean position
-    mean_x = np.mean(x_coords)
-    mean_y = np.mean(y_coords)
-    unweighted_mean = np.array([mean_x, mean_y])
-
-    # Center the coordinates
-    x_coords_centered = x_coords - mean_x
-    y_coords_centered = y_coords - mean_y
-
-    # Compute covariance matrix
-    coords = np.vstack([x_coords_centered, y_coords_centered])
-    covariance_matrix = np.cov(coords)
-
-    # Compute principal component
-    eigenvalues, eigenvectors = np.linalg.eig(covariance_matrix)
-    principal_component = eigenvectors[:, np.argmax(eigenvalues)]
-    principal_component_normalized = principal_component / np.linalg.norm(principal_component)
-
-    # Project white pixels onto the principal axis
-    projections = np.dot(coords.T, principal_component_normalized)
-
-    # Calculate the weighted mean along the principal axis
-    weighted_mean_projection = np.mean(projections)
-    weighted_mean = unweighted_mean + weighted_mean_projection * principal_component_normalized
-
-    # Calculate direction from unweighted mean to weighted mean
-    arrow_direction = weighted_mean - unweighted_mean
-    arrow_direction_normalized = arrow_direction / np.linalg.norm(arrow_direction)
-
-    return (int(mean_x), int(mean_y)), tuple(map(int, principal_component_normalized))
+    return img
 
 def mean_coord(image):
     # Ensure the image is in grayscale
