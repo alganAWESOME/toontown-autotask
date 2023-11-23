@@ -1,0 +1,339 @@
+{
+    "mml-altoavenue": {
+        "nodes": [
+            {
+                "id": 0,
+                "x": 436,
+                "y": 273,
+                "stop_required": false
+            },
+            {
+                "id": 1,
+                "x": 433,
+                "y": 172,
+                "stop_required": false
+            },
+            {
+                "id": 2,
+                "x": 405,
+                "y": 170,
+                "stop_required": false
+            },
+            {
+                "id": 3,
+                "x": 403,
+                "y": 107,
+                "stop_required": false
+            },
+            {
+                "id": 4,
+                "x": 356,
+                "y": 106,
+                "stop_required": false
+            },
+            {
+                "id": 5,
+                "x": 359,
+                "y": 203,
+                "stop_required": false
+            },
+            {
+                "id": 6,
+                "x": 395,
+                "y": 205,
+                "stop_required": false
+            },
+            {
+                "id": 7,
+                "x": 397,
+                "y": 299,
+                "stop_required": false
+            },
+            {
+                "id": 8,
+                "x": 371,
+                "y": 300,
+                "stop_required": false
+            },
+            {
+                "id": 9,
+                "x": 370,
+                "y": 334,
+                "stop_required": false
+            },
+            {
+                "id": 10,
+                "x": 333,
+                "y": 332,
+                "stop_required": false
+            },
+            {
+                "id": 11,
+                "x": 333,
+                "y": 300,
+                "stop_required": false
+            },
+            {
+                "id": 12,
+                "x": 332,
+                "y": 262,
+                "stop_required": false
+            },
+            {
+                "id": 13,
+                "x": 296,
+                "y": 262,
+                "stop_required": false
+            },
+            {
+                "id": 14,
+                "x": 297,
+                "y": 353,
+                "stop_required": false
+            },
+            {
+                "id": 15,
+                "x": 252,
+                "y": 351,
+                "stop_required": false
+            },
+            {
+                "id": 16,
+                "x": 251,
+                "y": 227,
+                "stop_required": false
+            },
+            {
+                "id": 17,
+                "x": 302,
+                "y": 224,
+                "stop_required": false
+            },
+            {
+                "id": 18,
+                "x": 303,
+                "y": 149,
+                "stop_required": false
+            }
+        ],
+        "edges": [
+            {
+                "start": 0,
+                "end": 1,
+                "distance": 101.04454463255303
+            },
+            {
+                "start": 1,
+                "end": 2,
+                "distance": 28.071337695236398
+            },
+            {
+                "start": 2,
+                "end": 3,
+                "distance": 63.0317380372777
+            },
+            {
+                "start": 3,
+                "end": 4,
+                "distance": 47.01063709417264
+            },
+            {
+                "start": 4,
+                "end": 5,
+                "distance": 97.04638066409278
+            },
+            {
+                "start": 5,
+                "end": 6,
+                "distance": 36.05551275463989
+            },
+            {
+                "start": 6,
+                "end": 7,
+                "distance": 94.02127418834527
+            },
+            {
+                "start": 7,
+                "end": 8,
+                "distance": 26.019223662515376
+            },
+            {
+                "start": 8,
+                "end": 9,
+                "distance": 34.0147027033899
+            },
+            {
+                "start": 8,
+                "end": 11,
+                "distance": 38.0
+            },
+            {
+                "start": 9,
+                "end": 10,
+                "distance": 37.05401462729781
+            },
+            {
+                "start": 10,
+                "end": 11,
+                "distance": 32.0
+            },
+            {
+                "start": 11,
+                "end": 12,
+                "distance": 38.01315561749642
+            },
+            {
+                "start": 12,
+                "end": 13,
+                "distance": 36.0
+            },
+            {
+                "start": 13,
+                "end": 14,
+                "distance": 91.00549433962765
+            },
+            {
+                "start": 14,
+                "end": 15,
+                "distance": 45.044422518220834
+            },
+            {
+                "start": 15,
+                "end": 16,
+                "distance": 124.00403219250575
+            },
+            {
+                "start": 16,
+                "end": 17,
+                "distance": 51.088159097779204
+            },
+            {
+                "start": 17,
+                "end": 18,
+                "distance": 75.0066663703967
+            }
+        ]
+    },
+    "ttc-punchlineplace": {
+        "nodes": [
+            {
+                "id": 0,
+                "x": 227,
+                "y": 257,
+                "stop_required": false
+            },
+            {
+                "id": 1,
+                "x": 228,
+                "y": 218,
+                "stop_required": false
+            },
+            {
+                "id": 2,
+                "x": 287,
+                "y": 217,
+                "stop_required": false
+            },
+            {
+                "id": 3,
+                "x": 290,
+                "y": 254,
+                "stop_required": false
+            },
+            {
+                "id": 4,
+                "x": 345,
+                "y": 256,
+                "stop_required": false
+            },
+            {
+                "id": 5,
+                "x": 340,
+                "y": 218,
+                "stop_required": false
+            },
+            {
+                "id": 6,
+                "x": 340,
+                "y": 194,
+                "stop_required": false
+            },
+            {
+                "id": 7,
+                "x": 376,
+                "y": 194,
+                "stop_required": false
+            },
+            {
+                "id": 8,
+                "x": 367,
+                "y": 257,
+                "stop_required": false
+            },
+            {
+                "id": 9,
+                "x": 430,
+                "y": 257,
+                "stop_required": false
+            },
+            {
+                "id": 10,
+                "x": 422,
+                "y": 227,
+                "stop_required": false
+            }
+        ],
+        "edges": [
+            {
+                "start": 0,
+                "end": 1,
+                "distance": 39.01281840626232
+            },
+            {
+                "start": 1,
+                "end": 2,
+                "distance": 59.00847396772772
+            },
+            {
+                "start": 2,
+                "end": 3,
+                "distance": 37.12142238654117
+            },
+            {
+                "start": 3,
+                "end": 4,
+                "distance": 55.036351623268054
+            },
+            {
+                "start": 4,
+                "end": 5,
+                "distance": 38.3275357934736
+            },
+            {
+                "start": 5,
+                "end": 6,
+                "distance": 24.0
+            },
+            {
+                "start": 6,
+                "end": 7,
+                "distance": 36.0
+            },
+            {
+                "start": 7,
+                "end": 8,
+                "distance": 63.63961030678928
+            },
+            {
+                "start": 8,
+                "end": 9,
+                "distance": 63.0
+            },
+            {
+                "start": 9,
+                "end": 10,
+                "distance": 31.04834939252005
+            }
+        ]
+    }
+}

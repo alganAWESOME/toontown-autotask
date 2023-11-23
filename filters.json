@@ -758,5 +758,164 @@
                 "max_value": 255
             }
         }
+    ],
+    "minimap-arrow": [
+        {
+            "type": "HSVFilter",
+            "config": {
+                "HSV_ranges": [
+                    {
+                        "center": [
+                            102,
+                            254,
+                            221
+                        ],
+                        "thresholds": [
+                            13,
+                            34,
+                            71
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "type": "ThresholdFilter",
+            "config": {
+                "threshold_value": 98,
+                "max_value": 255
+            }
+        },
+        {
+            "type": "ContourAreaFilter",
+            "config": {
+                "min_area": 6,
+                "max_area": 294
+            }
+        },
+        {
+            "type": "DilationFilter",
+            "config": {
+                "dilation_size": 2
+            }
+        }
+    ],
+    "punchlineplace-arrow": [
+        {
+            "type": "HSVFilter",
+            "config": {
+                "HSV_ranges": [
+                    {
+                        "center": [
+                            102,
+                            254,
+                            221
+                        ],
+                        "thresholds": [
+                            16,
+                            94,
+                            71
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "type": "ThresholdFilter",
+            "config": {
+                "threshold_value": 98,
+                "max_value": 255
+            }
+        },
+        {
+            "type": "ContourAreaFilter",
+            "config": {
+                "min_area": 6,
+                "max_area": 294
+            }
+        },
+        {
+            "type": "DilationFilter",
+            "config": {
+                "dilation_size": 2
+            }
+        },
+        {
+            "type": "CropFilter",
+            "config": {
+                "crops": [
+                    {
+                        "top_left": [
+                            235,
+                            264
+                        ],
+                        "bottom_right": [
+                            172,
+                            239
+                        ]
+                    },
+                    {
+                        "top_left": [
+                            238,
+                            207
+                        ],
+                        "bottom_right": [
+                            271,
+                            173
+                        ]
+                    },
+                    {
+                        "top_left": [
+                            219,
+                            258
+                        ],
+                        "bottom_right": [
+                            298,
+                            207
+                        ]
+                    },
+                    {
+                        "top_left": [
+                            276,
+                            265
+                        ],
+                        "bottom_right": [
+                            381,
+                            221
+                        ]
+                    },
+                    {
+                        "top_left": [
+                            382,
+                            222
+                        ],
+                        "bottom_right": [
+                            334,
+                            183
+                        ]
+                    },
+                    {
+                        "top_left": [
+                            376,
+                            267
+                        ],
+                        "bottom_right": [
+                            438,
+                            237
+                        ]
+                    },
+                    {
+                        "top_left": [
+                            410,
+                            214
+                        ],
+                        "bottom_right": [
+                            467,
+                            243
+                        ]
+                    }
+                ]
+            }
+        }
     ]
 }

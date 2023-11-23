@@ -531,3 +531,41 @@ class ContourFilter(BaseFilter):
         if len(np.unique(image)) == 2 and len(image.shape) <= 2:
             return True
         return False
+
+class ContourAreaFilter(ContourFilter):
+    def __init__(self):
+        super().__init__()
+        self.config = {
+            "min_area": 0,
+            "max_area": 20000
+        }
+
+    def configure(self):
+        min_area_slider = Scale(self.config_frame, from_=0, to=20000, orient=HORIZONTAL, label="Min Area", command=self._on_min_change)
+        min_area_slider.set(self.config["min_area"])
+        min_area_slider.pack()
+
+        max_area_slider = Scale(self.config_frame, from_=0, to=20000, orient=HORIZONTAL, label="Max Area", command=self._on_max_change)
+        max_area_slider.set(self.config["max_area"])
+        max_area_slider.pack()
+
+    def _on_min_change(self, val):
+        self.config['min_area'] = int(val)
+
+    def _on_max_change(self, val):
+        self.config['max_area'] = int(val)
+
+    def apply(self, img):
+        if not self._is_binary(img):
+            return img
+        
+        contours, _ = cv.findContours(img, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+
+        mask = np.zeros_like(img)
+        for contour in contours:
+            area = cv.contourArea(contour)
+            if self.config["min_area"] < area < self.config["max_area"]:
+                cv.drawContours(mask, [contour], -1, (255, 255, 255), thickness=cv.FILLED)
+
+        result = cv.bitwise_and(img, mask)
+        return mask
