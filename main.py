@@ -20,15 +20,17 @@ def main():
 
     pg.PAUSE = 0
 
-    streetlamp_det = ApplyFilter('mml-walkable-test')
+    walkable_detector = ApplyFilter('ttc-street-walkable')
     cog_detector = ApplyFilter('cogs')
     arrow_detector = ApplyFilter('punchlineplace-arrow')
 
     danger = False
 
     # minimap related
+    destination_node = 0
     looking_at_minimap = True
-    pos, direction = np.array([0,0]), np.array([1,0])
+    directions = {'right':np.array([1,0]), 'left':np.array([-1,0]), 'up':np.array([0,-1]), 'down':np.array([0,1])}
+    pos, direction = None, directions['right']
     minimap_graph = load_graph_to_networkx('graphs.json', "ttc-punchlineplace")
     path_calculated = False
     path_viz = None
@@ -48,8 +50,8 @@ def main():
         cogs = cog_detector.apply(screenshot)
         contours, _ = cv.findContours(cogs, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
         contours = sorted(contours, key=cv.contourArea, reverse=True)
-        
-        if time.time() - last_time >= 3:
+
+        if time.time() - last_time >= 3 and not looking_at_minimap:
             pg.press('alt')
             looking_at_minimap = True
             last_time = time.time()
@@ -58,16 +60,23 @@ def main():
         if looking_at_minimap:
             arrow = arrow_detector.apply(screenshot)
             try:
-                pos, direction = detect_arrow(arrow, direction)
+                try:
+                    pos, direction = find_arrow_direction(arrow)
+                except Exception as e:
+                    print(f"arrow_detection_error: {e}")
                 if not path_calculated:
-                    path = calculate_path(minimap_graph, pos, 9)
+                    path = calculate_path(minimap_graph, pos, destination_node)
                     path_calculated = True
                     path_viz = draw_path_on_image(minimap_graph, path)
                     target_node = 0
                     target_pos = minimap_graph.nodes[path[target_node]]['pos']
                     print(f"path={path}")
 
-                angle = calc_angle_to_target(pos, direction, target_pos)
+                angle = calc_angle_to_targ(pos, direction, target_pos)
+                if np.abs(angle) > np.pi / 2:
+                    pg.keyUp('up')
+                else:
+                    pg.keyDown('up')
                 if angle < -angle_thresh / 2:
                     pg.keyDown('left')
                     pg.keyUp('right')
@@ -82,19 +91,14 @@ def main():
                         pg.press('alt')
                         looking_at_minimap = False
                         last_time = time.time()
-                        
+
                 # update target node logic
                 if distance(pos, target_pos) < node_reached_thresh:
                     target_node += 1
                     target_pos = minimap_graph.nodes[path[target_node]]['pos']
+                    print(f"new_target_node={path[target_node]}")
             except Exception as e:
                 print(f"exception: {e}")
-
-
-        if not looking_at_minimap:
-            print("release left and right")
-            pg.keyUp('left')
-            pg.keyUp('right')
             
         # calculate `danger`
         try:
@@ -114,25 +118,42 @@ def main():
             danger = new_danger_status
             print(f"danger={danger}")
 
-        # movement logic
-        # if not danger:
-        #     if not looking_at_minimap:
-        #         pg.keyUp('left')
-        #         pg.keyUp('right')
-        # else:
-        #     if diff_x <= 0:
-        #         pg.keyDown('right')
-        #         pg.keyUp('left')
-        #     else:
-        #         pg.keyDown('left')
-        #         pg.keyUp('right')
+        #cog avoid logic
+        if not danger:
+            if not looking_at_minimap:
+                walkable = walkable_detector.apply(screenshot)
+                target_x, _ = mean_coord(walkable)
+                if target_x < facing_x - 50:
+                    pg.keyDown('left')
+                    pg.keyUp('right')
+                elif target_x > facing_x + 50:
+                    pg.keyDown('right')
+                    pg.keyUp('left')
+                else:
+                    pg.keyUp('left')
+                    pg.keyUp('right')
+        else:
+            if diff_x <= 0:
+                pg.keyDown('right')
+                pg.keyUp('left')
+            else:
+                pg.keyDown('left')
+                pg.keyUp('right')
 
         minimap_viz = path_viz.copy() if path_viz is not None else np.zeros((481, 640, 3))
-        color=(255, 0, 255)
-        thickness=2
-        endpoint = (1*pos[0] + 1*direction[0], 1*pos[1] + 1*direction[1])
-        cv.arrowedLine(minimap_viz, pos, endpoint, color, thickness)
-        cv.imshow('cogs', cogs)
+        try:
+            color=(255, 0, 255)
+            thickness=2
+            k = 10
+            endpoint = (pos[0] + int(k*direction[0]), pos[1] + int(k*direction[1]))
+            cv.arrowedLine(minimap_viz, pos, endpoint, color, thickness)
+        except:
+            pass
+        try:
+            viz = visualise([cogs, walkable])
+            cv.imshow('visualisation', viz)
+        except:
+            pass
         cv.imshow('minimap', minimap_viz)
         key = cv.waitKey(1)
         if key == ord('q'):
@@ -143,11 +164,6 @@ def main():
 def calc_angle_to_target(pos, direction, target_pos):
     def unit_vector(vector):
         return vector / np.linalg.norm(vector)
-
-    def angle_between_old(v1, v2):
-        v1_u = unit_vector(v1)
-        v2_u = unit_vector(v2)
-        return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
     
     def angle_between(v1, v2):
         return np.arctan2(v1[1], v1[0]) - np.arctan2(v2[1], v2[0])
@@ -155,6 +171,38 @@ def calc_angle_to_target(pos, direction, target_pos):
     direction_to_targ = (target_pos[0] - pos[0], target_pos[1] - pos[1])
 
     return angle_between(direction_to_targ, direction)
+
+def calc_angle_to_targ(player_pos, player_dir, target_pos):
+    """
+    Calculate the angle from the player's direction to the target.
+
+    Parameters:
+    player_pos (tuple): The (x, y) position of the player.
+    player_dir (tuple): The (x, y) direction vector of the player.
+    target_pos (tuple): The (x, y) position of the target.
+
+    Returns:
+    float: The angle in degrees from the player's direction to the target.
+           The range is between -180 and 180, where negative indicates a left turn.
+    """
+    # Convert tuples to numpy arrays for vector operations
+    player_pos = np.array(player_pos)
+    player_dir = np.array(player_dir)
+    target_pos = np.array(target_pos)
+
+    # Calculate the normalized direction vectors
+    target_dir = target_pos - player_pos
+    target_dir_normalized = target_dir / np.linalg.norm(target_dir)
+    player_dir_normalized = player_dir / np.linalg.norm(player_dir)
+
+    # Calculate the angle using the dot product and cross product (or determinant)
+    angle_cos = np.dot(player_dir_normalized, target_dir_normalized)
+    angle_sin = np.cross(player_dir_normalized, target_dir_normalized)
+
+    # Calculate the angle in radians, and then convert to degrees
+    angle = np.arctan2(angle_sin, angle_cos)
+
+    return angle
 
 def load_graph_to_networkx(file_path, graph_name):
     with open(file_path, 'r') as file:
@@ -205,8 +253,10 @@ def calculate_path(G, start_point, final_node):
         print("No path found.")
         return []
 
-def detect_arrow(filtered, prev_direction):
+def detect_arrow(filtered, prev_direction, prev_pos):
     arrow_pixels = np.argwhere(filtered == 255)
+    # if len(arrow_pixels) == 0:
+    #     return prev_pos, prev_direction
     mean_pixel = np.mean(arrow_pixels, axis=0)
     centered_data = arrow_pixels - mean_pixel
 
@@ -221,6 +271,48 @@ def detect_arrow(filtered, prev_direction):
     pos_estimate = mean_pixel[::-1]
 
     return tuple(map(int, pos_estimate)), tuple(map(int, direction_estimate))
+
+def find_arrow_direction(binary_image):
+    """
+    Find the centroid and direction of an arrow in a binary image.
+
+    Parameters:
+    binary_image (numpy.ndarray): A binary image containing an arrow.
+
+    Returns:
+    tuple: A tuple containing the centroid (x, y) and the direction vector.
+    """
+    # Ensure the image is binary
+    assert set(np.unique(binary_image)).issubset({0, 255}), "Image must be binary"
+
+    # Find coordinates of all foreground pixels
+    y, x = np.where(binary_image == 255)
+    points = np.column_stack((x, y)).astype(np.float32)
+
+    # Perform PCA
+    mean, eigenvectors = cv.PCACompute(points, mean=None)
+
+    # Calculate the unit vector of the principal axis
+    principal_axis = eigenvectors[0]
+
+    # Project points onto the principal axis
+    projections = np.dot(points - mean, principal_axis)
+
+    # Find the halfway point along the principal component
+    min_proj, max_proj = np.min(projections), np.max(projections)
+    halfway_proj = (min_proj + max_proj) / 2
+
+    # Count the number of pixels above and below the halfway point
+    above_halfway = np.sum(projections > halfway_proj)
+    below_halfway = np.sum(projections < halfway_proj)
+
+    # Determine the direction based on the pixel counts
+    direction = principal_axis if above_halfway >= below_halfway else -principal_axis
+    #direction = (int(direction[0]), int(direction[1]))
+
+    # Return the centroid and direction
+    centroid = (int(mean[0,0]), int(mean[0,1]))
+    return centroid, tuple(direction)
 
 def draw_path_on_image(G, path, image_size=(481, 640, 3)):
     # Create a blank image
@@ -248,6 +340,12 @@ def draw_path_on_image(G, path, image_size=(481, 640, 3)):
         # Draw circles for the nodes
         cv.circle(img, start_pos, 5, (255, 0, 0), -1)
         cv.circle(img, end_pos, 5, (255, 0, 0), -1)
+
+        # Draw node numbers
+        cv.putText(img, str(node_start), (start_pos[0] + 10, start_pos[1] + 10), 
+                   cv.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1, cv.LINE_AA)
+        cv.putText(img, str(node_end), (end_pos[0] + 10, end_pos[1] + 10), 
+                   cv.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1, cv.LINE_AA)
 
     return img
 

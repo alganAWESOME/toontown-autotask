@@ -569,3 +569,37 @@ class ContourAreaFilter(ContourFilter):
 
         result = cv.bitwise_and(img, mask)
         return mask
+
+class ContourCropFilter(CropFilter):
+    def __init__(self):
+        super().__init__()
+
+    def _is_binary(self, image):
+        # Check if the image is binary AND grayscale
+        if len(np.unique(image)) == 2 and len(image.shape) <= 2:
+            return True
+        return False
+
+    def apply(self, image):
+        if not self.config['crops'] or not self._is_binary(image):
+            return image
+
+        final_image = np.zeros_like(image)
+        contours, _ = cv.findContours(image, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+
+        for crop in self.config['crops']:
+            top_left, bottom_right = crop['top_left'], crop['bottom_right']
+            crop_rect = cv.rectangle(np.zeros_like(image), tuple(top_left), tuple(bottom_right), 255, -1)
+
+            for contour in contours:
+                if self.checkContourInCrop(contour, crop_rect):
+                    cv.drawContours(final_image, [contour], -1, 255, thickness=cv.FILLED)
+
+        return final_image
+
+    @staticmethod
+    def checkContourInCrop(contour, crop_rect):
+        for point in contour:
+            if crop_rect[point[0][1], point[0][0]] == 255:
+                return True
+        return False

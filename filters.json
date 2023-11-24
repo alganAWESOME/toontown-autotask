@@ -118,120 +118,41 @@
                 "HSV_ranges": [
                     {
                         "center": [
-                            19,
-                            102,
-                            225
-                        ],
-                        "thresholds": [
-                            0,
-                            8,
-                            15
-                        ]
-                    },
-                    {
-                        "center": [
                             18,
                             101,
-                            229
+                            230
+                        ],
+                        "thresholds": [
+                            4,
+                            8,
+                            169
+                        ]
+                    },
+                    {
+                        "center": [
+                            22,
+                            125,
+                            206
                         ],
                         "thresholds": [
                             0,
-                            8,
-                            15
+                            41,
+                            120
                         ]
                     },
                     {
                         "center": [
                             19,
-                            113,
-                            210
-                        ],
-                        "thresholds": [
-                            0,
-                            11,
-                            45
-                        ]
-                    },
-                    {
-                        "center": [
-                            21,
-                            98,
-                            217
-                        ],
-                        "thresholds": [
-                            1,
-                            4,
-                            11
-                        ]
-                    },
-                    {
-                        "center": [
-                            22,
-                            99,
-                            193
-                        ],
-                        "thresholds": [
-                            0,
-                            4,
-                            19
-                        ]
-                    },
-                    {
-                        "center": [
-                            22,
-                            116,
+                            112,
                             211
                         ],
                         "thresholds": [
                             0,
-                            23,
-                            38
-                        ]
-                    },
-                    {
-                        "center": [
-                            22,
-                            88,
-                            217
-                        ],
-                        "thresholds": [
-                            0,
-                            4,
-                            23
-                        ]
-                    },
-                    {
-                        "center": [
-                            18,
-                            111,
-                            210
-                        ],
-                        "thresholds": [
-                            0,
-                            15,
-                            8
-                        ]
-                    },
-                    {
-                        "center": [
-                            21,
-                            96,
-                            196
-                        ],
-                        "thresholds": [
-                            0,
-                            0,
-                            0
+                            34,
+                            4
                         ]
                     }
                 ]
-            }
-        },
-        {
-            "type": "ThresholdFilter",
-            "config": {
-                "threshold_value": 127,
-                "max_value": 255
             }
         },
         {
@@ -243,13 +164,14 @@
         {
             "type": "DilationFilter",
             "config": {
-                "dilation_size": 5
+                "dilation_size": 7
             }
         },
         {
-            "type": "ErosionFilter",
+            "type": "ThresholdFilter",
             "config": {
-                "erosion_size": 8
+                "threshold_value": 127,
+                "max_value": 255
             }
         },
         {
@@ -258,22 +180,12 @@
                 "crops": [
                     {
                         "top_left": [
-                            378,
-                            480
+                            547,
+                            67
                         ],
                         "bottom_right": [
-                            266,
-                            318
-                        ]
-                    },
-                    {
-                        "top_left": [
-                            230,
-                            273
-                        ],
-                        "bottom_right": [
-                            417,
-                            367
+                            107,
+                            396
                         ]
                     }
                 ]
@@ -841,7 +753,7 @@
             }
         },
         {
-            "type": "CropFilter",
+            "type": "ContourCropFilter",
             "config": {
                 "crops": [
                     {
