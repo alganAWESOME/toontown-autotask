@@ -7,6 +7,7 @@ import pyautogui as pg
 import json
 import networkx as nx
 from math import sqrt
+import time
 
 def main():
     wincap = WindowCapture("Toontown Offline")
@@ -23,48 +24,79 @@ def main():
     cog_detector = ApplyFilter('cogs')
     arrow_detector = ApplyFilter('punchlineplace-arrow')
 
+    danger = False
+
     # minimap related
+    looking_at_minimap = True
     pos, direction = np.array([0,0]), np.array([1,0])
     minimap_graph = load_graph_to_networkx('graphs.json', "ttc-punchlineplace")
     path_calculated = False
     path_viz = None
-    angle_thresh = (1/6) * np.pi # if angle below (this/2) turn left
+    angle_thresh = (1/12) * np.pi # if angle below (-this/2) turn left
     node_reached_thresh = 10
     target_node = None
 
     sleep(2)
     pg.keyDown('up')
+    pg.press('alt')
+    last_time = time.time()
     while True:
         if wincap.screenshot is None:
             continue
         screenshot = wincap.screenshot
 
-        target = streetlamp_det.apply(screenshot)
-        try:
-            target_x, _ = mean_coord(target)
-            searching = False
-        except:
-            searching = True
-
         cogs = cog_detector.apply(screenshot)
         contours, _ = cv.findContours(cogs, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
         contours = sorted(contours, key=cv.contourArea, reverse=True)
-
-        arrow = arrow_detector.apply(screenshot)
-        pos, direction = detect_arrow(arrow, direction)
-        if not path_calculated:
-            path = calculate_path(minimap_graph, pos, 9)
-            path_calculated = True
-            path_viz = draw_path_on_image(minimap_graph, path)
-            target_node = 0
-            target_pos = minimap_graph.nodes[path[target_node]]['pos']
-            print(f"path={path}")
-
-        # update target node logic
-        if distance(pos, target_pos) < node_reached_thresh:
-            target_node += 1
-            target_pos = minimap_graph.nodes[path[target_node]]['pos']
         
+        if time.time() - last_time >= 3:
+            pg.press('alt')
+            looking_at_minimap = True
+            last_time = time.time()
+            print("start looking at minimap")
+
+        if looking_at_minimap:
+            arrow = arrow_detector.apply(screenshot)
+            try:
+                pos, direction = detect_arrow(arrow, direction)
+                if not path_calculated:
+                    path = calculate_path(minimap_graph, pos, 9)
+                    path_calculated = True
+                    path_viz = draw_path_on_image(minimap_graph, path)
+                    target_node = 0
+                    target_pos = minimap_graph.nodes[path[target_node]]['pos']
+                    print(f"path={path}")
+
+                angle = calc_angle_to_target(pos, direction, target_pos)
+                if angle < -angle_thresh / 2:
+                    pg.keyDown('left')
+                    pg.keyUp('right')
+                elif angle > angle_thresh / 2:
+                    pg.keyDown('right')
+                    pg.keyUp('left')
+                else:
+                    pg.keyUp('left')
+                    pg.keyUp('right')
+                    if time.time() - last_time >= 2:
+                        print("quit looking at minimap")
+                        pg.press('alt')
+                        looking_at_minimap = False
+                        last_time = time.time()
+                        
+                # update target node logic
+                if distance(pos, target_pos) < node_reached_thresh:
+                    target_node += 1
+                    target_pos = minimap_graph.nodes[path[target_node]]['pos']
+            except Exception as e:
+                print(f"exception: {e}")
+
+
+        if not looking_at_minimap:
+            print("release left and right")
+            pg.keyUp('left')
+            pg.keyUp('right')
+            
+        # calculate `danger`
         try:
             largest = contours[0]
             largest_area = cv.contourArea(largest)
@@ -74,37 +106,28 @@ def main():
             cog_x = 0
 
         diff_x = cog_x - facing_x # if negative turn right
-        if largest_area > 1800 and np.abs(diff_x) < 200:
-            danger = True
+        if largest_area > 1800 and np.abs(diff_x) < 180:
+            new_danger_status = True
         else:
-            danger = False
+            new_danger_status = False
+        if new_danger_status != danger:
+            danger = new_danger_status
+            print(f"danger={danger}")
 
-        print(f"danger={danger}")
+        # movement logic
+        # if not danger:
+        #     if not looking_at_minimap:
+        #         pg.keyUp('left')
+        #         pg.keyUp('right')
+        # else:
+        #     if diff_x <= 0:
+        #         pg.keyDown('right')
+        #         pg.keyUp('left')
+        #     else:
+        #         pg.keyDown('left')
+        #         pg.keyUp('right')
 
-        #danger = False
-
-        # turning logic
-        if not danger:
-            angle = calc_angle_to_target(pos, direction, target_pos)
-            #print(f"angle_to_target={angle}")
-            if angle < -angle_thresh / 2:
-                pg.keyDown('left')
-                pg.keyUp('right')
-            elif angle > angle_thresh / 2:
-                pg.keyDown('right')
-                pg.keyUp('left')
-            else:
-                pg.keyUp('left')
-                pg.keyUp('right')
-        else:
-            if diff_x <= 0:
-                pg.keyDown('right')
-                pg.keyUp('left')
-            else:
-                pg.keyDown('left')
-                pg.keyUp('right')                
-
-        minimap_viz = path_viz.copy()
+        minimap_viz = path_viz.copy() if path_viz is not None else np.zeros((481, 640, 3))
         color=(255, 0, 255)
         thickness=2
         endpoint = (1*pos[0] + 1*direction[0], 1*pos[1] + 1*direction[1])
