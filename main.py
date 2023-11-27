@@ -61,7 +61,8 @@ def main():
             arrow = arrow_detector.apply(screenshot)
             try:
                 try:
-                    pos, direction = find_arrow_direction(arrow)
+                    if time.time() - last_time >= 0.1:
+                        pos, direction = find_arrow_direction(arrow)
                 except Exception as e:
                     print(f"arrow_detection_error: {e}")
                 if not path_calculated:
@@ -73,6 +74,7 @@ def main():
                     print(f"path={path}")
 
                 angle = calc_angle_to_targ(pos, direction, target_pos)
+                print(f"angle={angle}")
                 if np.abs(angle) > np.pi / 2:
                     pg.keyUp('up')
                 else:
