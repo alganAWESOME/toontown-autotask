@@ -335,5 +335,215 @@
                 "distance": 31.04834939252005
             }
         ]
+    },
+    "sillystreet": {
+        "nodes": [
+            {
+                "id": 0,
+                "x": 362,
+                "y": 88,
+                "stop_required": false
+            },
+            {
+                "id": 1,
+                "x": 350,
+                "y": 112,
+                "stop_required": false
+            },
+            {
+                "id": 2,
+                "x": 299,
+                "y": 110,
+                "stop_required": false
+            },
+            {
+                "id": 3,
+                "x": 256,
+                "y": 111,
+                "stop_required": false
+            },
+            {
+                "id": 4,
+                "x": 255,
+                "y": 141,
+                "stop_required": false
+            },
+            {
+                "id": 5,
+                "x": 315,
+                "y": 142,
+                "stop_required": false
+            },
+            {
+                "id": 6,
+                "x": 339,
+                "y": 155,
+                "stop_required": false
+            },
+            {
+                "id": 7,
+                "x": 363,
+                "y": 172,
+                "stop_required": false
+            },
+            {
+                "id": 8,
+                "x": 398,
+                "y": 185,
+                "stop_required": false
+            },
+            {
+                "id": 9,
+                "x": 398,
+                "y": 205,
+                "stop_required": false
+            },
+            {
+                "id": 10,
+                "x": 335,
+                "y": 205,
+                "stop_required": false
+            },
+            {
+                "id": 11,
+                "x": 330,
+                "y": 275,
+                "stop_required": false
+            },
+            {
+                "id": 12,
+                "x": 371,
+                "y": 275,
+                "stop_required": false
+            },
+            {
+                "id": 13,
+                "x": 372,
+                "y": 340,
+                "stop_required": false
+            },
+            {
+                "id": 14,
+                "x": 338,
+                "y": 338,
+                "stop_required": false
+            },
+            {
+                "id": 15,
+                "x": 309,
+                "y": 212,
+                "stop_required": false
+            },
+            {
+                "id": 16,
+                "x": 218,
+                "y": 213,
+                "stop_required": false
+            },
+            {
+                "id": 17,
+                "x": 311,
+                "y": 265,
+                "stop_required": false
+            },
+            {
+                "id": 18,
+                "x": 312,
+                "y": 304,
+                "stop_required": false
+            }
+        ],
+        "edges": [
+            {
+                "start": 0,
+                "end": 1,
+                "distance": 26.832815729997478
+            },
+            {
+                "start": 1,
+                "end": 2,
+                "distance": 51.03920062069938
+            },
+            {
+                "start": 2,
+                "end": 3,
+                "distance": 43.01162633521314
+            },
+            {
+                "start": 3,
+                "end": 4,
+                "distance": 30.01666203960727
+            },
+            {
+                "start": 4,
+                "end": 5,
+                "distance": 60.00833275470999
+            },
+            {
+                "start": 5,
+                "end": 6,
+                "distance": 27.294688127912362
+            },
+            {
+                "start": 6,
+                "end": 7,
+                "distance": 29.410882339705484
+            },
+            {
+                "start": 7,
+                "end": 8,
+                "distance": 37.33630940518894
+            },
+            {
+                "start": 8,
+                "end": 9,
+                "distance": 20.0
+            },
+            {
+                "start": 9,
+                "end": 10,
+                "distance": 63.0
+            },
+            {
+                "start": 10,
+                "end": 11,
+                "distance": 70.178344238091
+            },
+            {
+                "start": 11,
+                "end": 12,
+                "distance": 41.0
+            },
+            {
+                "start": 12,
+                "end": 13,
+                "distance": 65.00769185258002
+            },
+            {
+                "start": 13,
+                "end": 14,
+                "distance": 34.058772731852805
+            },
+            {
+                "start": 14,
+                "end": 18,
+                "distance": 42.80186911806539
+            },
+            {
+                "start": 15,
+                "end": 16,
+                "distance": 91.00549433962765
+            },
+            {
+                "start": 15,
+                "end": 17,
+                "distance": 53.03772242470448
+            },
+            {
+                "start": 17,
+                "end": 18,
+                "distance": 39.01281840626232
+            }
+        ]
     }
 }

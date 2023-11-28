@@ -1,6 +1,7 @@
 import cv2 as cv
 import numpy as np
 from tkinter import *
+import base64
 
 class BaseFilter:
     def __init__(self):
@@ -37,6 +38,10 @@ class BaseFilter:
             "type": self.__class__.__name__,
             "config": config_serializable
         }
+
+    @staticmethod
+    def deserialize_config(config):
+        return config
 
 class HSVFilter(BaseFilter):
     def __init__(self):
@@ -378,7 +383,7 @@ class MaxPixelCountFilter(MinimumPixelCountFilter):
     def apply(self, image):
         super().apply(image, min_threshold=False)
 
-class Grayscale(BaseFilter):
+class GrayscaleFilter(BaseFilter):
     def __init__(self):
         super().__init__()
         self.config = {}
@@ -435,7 +440,7 @@ class CropFilter(BaseFilter):
         if event == cv.EVENT_LBUTTONDOWN and image is not None:
             if self.temporary_crop_start:
                 selected_crop = self.config['crops'][self.selected_crop_index]
-                selected_crop['top_left'] = list(self.temporary_crop_start)
+                selected_crop['top_lFeft'] = list(self.temporary_crop_start)
                 selected_crop['bottom_right'] = [x, y]
                 self.temporary_crop_start = None
             else:
@@ -537,7 +542,7 @@ class ContourAreaFilter(ContourFilter):
         super().__init__()
         self.config = {
             "min_area": 0,
-            "max_area": 20000
+            "max_area": 100000
         }
 
     def configure(self):
@@ -545,7 +550,7 @@ class ContourAreaFilter(ContourFilter):
         min_area_slider.set(self.config["min_area"])
         min_area_slider.pack()
 
-        max_area_slider = Scale(self.config_frame, from_=0, to=20000, orient=HORIZONTAL, label="Max Area", command=self._on_max_change)
+        max_area_slider = Scale(self.config_frame, from_=0, to=100000, orient=HORIZONTAL, label="Max Area", command=self._on_max_change)
         max_area_slider.set(self.config["max_area"])
         max_area_slider.pack()
 
@@ -603,3 +608,87 @@ class ContourCropFilter(CropFilter):
             if crop_rect[point[0][1], point[0][0]] == 255:
                 return True
         return False
+    
+class CannyEdgeDetector(BaseFilter):
+    def __init__(self):
+        super().__init__()
+        self.config = {
+            'Threshold1': 100,
+            'Threshold2': 200,
+            'ApertureSize': 3,
+            'L2Gradient': False
+        }
+
+    def configure(self):
+        Label(self.config_frame, text="Threshold1:").pack()
+        threshold1_scale = Scale(self.config_frame, from_=0, to=255, orient=HORIZONTAL,
+                                 command=lambda val: self.on_threshold1_change(val))
+        threshold1_scale.set(self.config['Threshold1'])
+        threshold1_scale.pack()
+
+        Label(self.config_frame, text="Threshold2:").pack()
+        threshold2_scale = Scale(self.config_frame, from_=0, to=255, orient=HORIZONTAL,
+                                 command=lambda val: self.on_threshold2_change(val))
+        threshold2_scale.set(self.config['Threshold2'])
+        threshold2_scale.pack()
+
+        Label(self.config_frame, text="Aperture Size:").pack()
+        aperture_size_scale = Scale(self.config_frame, from_=3, to=7, resolution=2, orient=HORIZONTAL,
+                                    command=lambda val: self.on_aperture_size_change(val))
+        aperture_size_scale.set(self.config['ApertureSize'])
+        aperture_size_scale.pack()
+
+        self.l2_gradient_var = IntVar(value=self.config['L2Gradient'])
+        l2_gradient_check = Checkbutton(self.config_frame, text="L2 Gradient",
+                                        variable=self.l2_gradient_var,
+                                        command=self.on_l2_gradient_change)
+        l2_gradient_check.pack()
+
+    def on_threshold1_change(self, val):
+        self.config['Threshold1'] = int(val)
+        self.update_callback()
+
+    def on_threshold2_change(self, val):
+        self.config['Threshold2'] = int(val)
+        self.update_callback()
+
+    def on_aperture_size_change(self, val):
+        self.config['ApertureSize'] = int(val)
+        self.update_callback()
+
+    def on_l2_gradient_change(self):
+        self.config['L2Gradient'] = bool(self.l2_gradient_var.get())
+        self.update_callback()
+
+    def apply(self, image):
+        return cv.Canny(image,
+                            self.config['Threshold1'],
+                            self.config['Threshold2'],
+                            apertureSize=self.config['ApertureSize'],
+                            L2gradient=self.config['L2Gradient'])
+    
+class GaussianBlur(BaseFilter):
+    def __init__(self):
+        super().__init__()
+        self.config = {'Kernel Size': 5}
+
+    def configure(self):
+        Label(self.config_frame, text="Kernel Size:").pack()
+        kernel_size_scale = Scale(self.config_frame, from_=1, to=31, resolution=2, orient=HORIZONTAL,
+                                  command=self.on_kernel_size_change)
+        kernel_size_scale.set(self.config['Kernel Size'])
+        kernel_size_scale.pack()
+
+    def on_kernel_size_change(self, val):
+        self.config['Kernel Size'] = int(val)
+        self.update_callback()
+
+    def apply(self, image):
+        # Ensure the kernel size is odd
+        kernel_size = int(self.config['Kernel Size'])
+        if kernel_size % 2 == 0:
+            kernel_size += 1
+
+        # Apply Gaussian Blur
+        blurred_image = cv.GaussianBlur(image, (kernel_size, kernel_size), 0)
+        return blurred_image

@@ -829,5 +829,423 @@
                 ]
             }
         }
+    ],
+    "ttc-tunnel": [
+        {
+            "type": "HSVFilter",
+            "config": {
+                "HSV_ranges": [
+                    {
+                        "center": [
+                            16,
+                            51,
+                            131
+                        ],
+                        "thresholds": [
+                            3,
+                            23,
+                            255
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "type": "ThresholdFilter",
+            "config": {
+                "threshold_value": 0,
+                "max_value": 255
+            }
+        },
+        {
+            "type": "ContourAreaFilter",
+            "config": {
+                "min_area": 294,
+                "max_area": 20000
+            }
+        }
+    ],
+    "sillystreet-arrow": [
+        {
+            "type": "HSVFilter",
+            "config": {
+                "HSV_ranges": [
+                    {
+                        "center": [
+                            102,
+                            254,
+                            221
+                        ],
+                        "thresholds": [
+                            16,
+                            94,
+                            71
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "type": "ThresholdFilter",
+            "config": {
+                "threshold_value": 98,
+                "max_value": 255
+            }
+        },
+        {
+            "type": "ContourAreaFilter",
+            "config": {
+                "min_area": 6,
+                "max_area": 294
+            }
+        },
+        {
+            "type": "DilationFilter",
+            "config": {
+                "dilation_size": 2
+            }
+        },
+        {
+            "type": "ContourCropFilter",
+            "config": {
+                "crops": [
+                    {
+                        "top_left": [
+                            364,
+                            122
+                        ],
+                        "bottom_right": [
+                            341,
+                            73
+                        ]
+                    },
+                    {
+                        "top_left": [
+                            295,
+                            105
+                        ],
+                        "bottom_right": [
+                            363,
+                            123
+                        ]
+                    },
+                    {
+                        "top_left": [
+                            307,
+                            83
+                        ],
+                        "bottom_right": [
+                            237,
+                            158
+                        ]
+                    },
+                    {
+                        "top_left": [
+                            288,
+                            165
+                        ],
+                        "bottom_right": [
+                            368,
+                            132
+                        ]
+                    },
+                    {
+                        "top_left": [
+                            415,
+                            253
+                        ],
+                        "bottom_right": [
+                            331,
+                            163
+                        ]
+                    },
+                    {
+                        "top_left": [
+                            309,
+                            187
+                        ],
+                        "bottom_right": [
+                            391,
+                            361
+                        ]
+                    },
+                    {
+                        "top_left": [
+                            332,
+                            368
+                        ],
+                        "bottom_right": [
+                            285,
+                            204
+                        ]
+                    },
+                    {
+                        "top_left": [
+                            292,
+                            254
+                        ],
+                        "bottom_right": [
+                            262,
+                            201
+                        ]
+                    },
+                    {
+                        "top_left": [
+                            212,
+                            205
+                        ],
+                        "bottom_right": [
+                            266,
+                            233
+                        ]
+                    },
+                    {
+                        "top_left": [
+                            211,
+                            219
+                        ],
+                        "bottom_right": [
+                            230,
+                            244
+                        ]
+                    }
+                ]
+            }
+        }
+    ],
+    "sillystreet-task": [
+        {
+            "type": "HSVFilter",
+            "config": {
+                "HSV_ranges": [
+                    {
+                        "center": [
+                            0,
+                            0,
+                            255
+                        ],
+                        "thresholds": [
+                            0,
+                            0,
+                            0
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "type": "CropFilter",
+            "config": {
+                "crops": [
+                    {
+                        "top_left": [
+                            364,
+                            122
+                        ],
+                        "bottom_right": [
+                            341,
+                            73
+                        ]
+                    },
+                    {
+                        "top_left": [
+                            295,
+                            105
+                        ],
+                        "bottom_right": [
+                            363,
+                            123
+                        ]
+                    },
+                    {
+                        "top_left": [
+                            307,
+                            83
+                        ],
+                        "bottom_right": [
+                            237,
+                            158
+                        ]
+                    },
+                    {
+                        "top_left": [
+                            288,
+                            165
+                        ],
+                        "bottom_right": [
+                            368,
+                            132
+                        ]
+                    },
+                    {
+                        "top_left": [
+                            415,
+                            253
+                        ],
+                        "bottom_right": [
+                            331,
+                            163
+                        ]
+                    },
+                    {
+                        "top_left": [
+                            309,
+                            187
+                        ],
+                        "bottom_right": [
+                            391,
+                            361
+                        ]
+                    },
+                    {
+                        "top_left": [
+                            332,
+                            368
+                        ],
+                        "bottom_right": [
+                            285,
+                            204
+                        ]
+                    },
+                    {
+                        "top_left": [
+                            292,
+                            254
+                        ],
+                        "bottom_right": [
+                            262,
+                            201
+                        ]
+                    },
+                    {
+                        "top_left": [
+                            212,
+                            205
+                        ],
+                        "bottom_right": [
+                            266,
+                            233
+                        ]
+                    },
+                    {
+                        "top_left": [
+                            211,
+                            219
+                        ],
+                        "bottom_right": [
+                            230,
+                            244
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "type": "ThresholdFilter",
+            "config": {
+                "threshold_value": 0,
+                "max_value": 255
+            }
+        }
+    ],
+    "ttc-doors": [
+        {
+            "type": "HSVFilter",
+            "config": {
+                "HSV_ranges": [
+                    {
+                        "center": [
+                            12,
+                            158,
+                            153
+                        ],
+                        "thresholds": [
+                            0,
+                            0,
+                            105
+                        ]
+                    },
+                    {
+                        "center": [
+                            20,
+                            116,
+                            141
+                        ],
+                        "thresholds": [
+                            16,
+                            4,
+                            251
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "type": "ThresholdFilter",
+            "config": {
+                "threshold_value": 0,
+                "max_value": 255
+            }
+        },
+        {
+            "type": "ContourAreaFilter",
+            "config": {
+                "min_area": 5294,
+                "max_area": 20000
+            }
+        }
+    ],
+    "ttc-door-yellow-1": [
+        {
+            "type": "GaussianBlur",
+            "config": {
+                "Kernel Size": 13
+            }
+        },
+        {
+            "type": "HSVFilter",
+            "config": {
+                "HSV_ranges": [
+                    {
+                        "center": [
+                            23,
+                            159,
+                            188
+                        ],
+                        "thresholds": [
+                            0,
+                            4,
+                            34
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "type": "ErosionFilter",
+            "config": {
+                "erosion_size": 2
+            }
+        },
+        {
+            "type": "ThresholdFilter",
+            "config": {
+                "threshold_value": 127,
+                "max_value": 255
+            }
+        },
+        {
+            "type": "DilationFilter",
+            "config": {
+                "dilation_size": 10
+            }
+        },
+        {
+            "type": "ContourAreaFilter",
+            "config": {
+                "min_area": 1176,
+                "max_area": 42647
+            }
+        }
     ]
 }
