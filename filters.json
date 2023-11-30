@@ -1247,5 +1247,98 @@
                 "max_area": 42647
             }
         }
+    ],
+    "minimap-mask": [
+        {
+            "type": "ThresholdFilter",
+            "config": {
+                "threshold_value": 101,
+                "max_value": 255
+            }
+        },
+        {
+            "type": "ErosionFilter",
+            "config": {
+                "erosion_size": 5
+            }
+        },
+        {
+            "type": "SelectiveContourFilter",
+            "config": {
+                "selected_point": [
+                    320,
+                    240
+                ]
+            }
+        }
+    ],
+    "arrow": [
+        {
+            "type": "HSVFilter",
+            "config": {
+                "HSV_ranges": [
+                    {
+                        "center": [
+                            102,
+                            254,
+                            221
+                        ],
+                        "thresholds": [
+                            16,
+                            94,
+                            71
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "type": "ThresholdFilter",
+            "config": {
+                "threshold_value": 98,
+                "max_value": 255
+            }
+        },
+        {
+            "type": "ContourAreaFilter",
+            "config": {
+                "min_area": 6,
+                "max_area": 294
+            }
+        },
+        {
+            "type": "DilationFilter",
+            "config": {
+                "dilation_size": 2
+            }
+        }
+    ],
+    "taskicon": [
+        {
+            "type": "HSVFilter",
+            "config": {
+                "HSV_ranges": [
+                    {
+                        "center": [
+                            0,
+                            0,
+                            255
+                        ],
+                        "thresholds": [
+                            0,
+                            0,
+                            0
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "type": "ThresholdFilter",
+            "config": {
+                "threshold_value": 0,
+                "max_value": 255
+            }
+        }
     ]
 }

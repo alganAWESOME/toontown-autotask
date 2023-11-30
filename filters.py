@@ -1,7 +1,7 @@
 import cv2 as cv
 import numpy as np
 from tkinter import *
-import base64
+from collections import deque
 
 class BaseFilter:
     def __init__(self):
@@ -42,6 +42,14 @@ class BaseFilter:
     @staticmethod
     def deserialize_config(config):
         return config
+    
+    # UTILITIES
+
+    def _is_binary(self, image):
+        # Check if the image is binary AND grayscale
+        if len(np.unique(image)) == 2 and len(image.shape) <= 2:
+            return True
+        return False
 
 class HSVFilter(BaseFilter):
     def __init__(self):
@@ -319,12 +327,13 @@ class ThresholdFilter(BaseFilter):
         self.update_callback()
 
     def apply(self, image):
-        # Convert the image to grayscale
-        gray_image = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
+        # Convert the image to grayscale if it's not already
+        if len(image.shape) == 3:
+            image = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
         # Apply binary thresholding to the grayscale image
         threshold_value = self.config['threshold_value']
         max_value = self.config['max_value']
-        _, binary_image = cv.threshold(gray_image, threshold_value, max_value, cv.THRESH_BINARY)
+        _, binary_image = cv.threshold(image, threshold_value, max_value, cv.THRESH_BINARY)
         return binary_image
 
 class MinimumPixelCountFilter(BaseFilter):
@@ -440,7 +449,7 @@ class CropFilter(BaseFilter):
         if event == cv.EVENT_LBUTTONDOWN and image is not None:
             if self.temporary_crop_start:
                 selected_crop = self.config['crops'][self.selected_crop_index]
-                selected_crop['top_lFeft'] = list(self.temporary_crop_start)
+                selected_crop['top_left'] = list(self.temporary_crop_start)
                 selected_crop['bottom_right'] = [x, y]
                 self.temporary_crop_start = None
             else:
@@ -530,12 +539,43 @@ class ContourFilter(BaseFilter):
         cv.drawContours(contour_image, contours, -1, (255, 255, 255), thickness=2)
 
         return contour_image
+    
+class SelectiveContourFilter(ContourFilter):
+    def __init__(self):
+        super().__init__()
+        self.config = {'selected_point': None}
 
-    def _is_binary(self, image):
-        # Check if the image is binary AND grayscale
-        if len(np.unique(image)) == 2 and len(image.shape) <= 2:
-            return True
-        return False
+    def on_mouse_click(self, event, x, y, flags, param, image, source=None):
+        # Check for left mouse button click event
+        if event == cv.EVENT_LBUTTONDOWN:
+            self.config['selected_point'] = (x, y)
+            self.selected_contour = self._find_contour_at_xy(image, x, y)
+            self.update_callback()
+
+    def _find_contour_at_xy(self, image, x, y):
+        # Find all contours
+        contours, _ = cv.findContours(image, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+
+        # Check if any contour contains the point
+        for contour in contours:
+            if cv.pointPolygonTest(contour, (x, y), False) >= 0:
+                return contour
+        return None
+
+    def apply(self, image):
+        # Use base class's apply method to find all contours
+        contour_image = super().apply(image)
+
+        # Pick the contour based on the saved point in self.config
+        selected_point = self.config['selected_point']
+        if selected_point is not None:
+            x, y = selected_point
+            self.selected_contour = self._find_contour_at_xy(image, x, y)
+            if self.selected_contour is not None:
+                contour_image = np.zeros_like(image)
+                cv.drawContours(contour_image, [self.selected_contour], -1, (255, 255, 255), thickness=-1)
+
+        return contour_image
 
 class ContourAreaFilter(ContourFilter):
     def __init__(self):
@@ -578,12 +618,6 @@ class ContourAreaFilter(ContourFilter):
 class ContourCropFilter(CropFilter):
     def __init__(self):
         super().__init__()
-
-    def _is_binary(self, image):
-        # Check if the image is binary AND grayscale
-        if len(np.unique(image)) == 2 and len(image.shape) <= 2:
-            return True
-        return False
 
     def apply(self, image):
         if not self.config['crops'] or not self._is_binary(image):
@@ -692,3 +726,54 @@ class GaussianBlur(BaseFilter):
         # Apply Gaussian Blur
         blurred_image = cv.GaussianBlur(image, (kernel_size, kernel_size), 0)
         return blurred_image
+
+class MeanFilter(BaseFilter):
+    def __init__(self):
+        super().__init__()
+        self.config = {'num_images': 5}
+        self.images_queue = deque(maxlen=self.config['num_images'])
+
+    def configure(self):
+        # Create a slider for configuring the number of images
+        Label(self.config_frame, text="Number of Images:").pack()
+        num_images_scale = Scale(self.config_frame, from_=1, to=10, resolution=1, orient=HORIZONTAL,
+                                 command=self.on_num_images_change)
+        num_images_scale.set(self.config['num_images'])
+        num_images_scale.pack()
+
+    def on_num_images_change(self, val):
+        self.config['num_images'] = int(val)
+        self.images_queue = deque(maxlen=self.config['num_images'])  # Reset the queue with new maxlen
+        self.update_callback()
+
+    def apply(self, image):
+        self.images_queue.append(image)
+
+        # Calculate the mean of images in the queue
+        if len(self.images_queue) > 0:
+            mean_image = np.mean(self.images_queue, axis=0).astype(np.uint8)
+            return mean_image
+        else:
+            return image
+
+class MaskFilter(BaseFilter):
+    def __init__(self):
+        super().__init__()
+        self.screenshot = None  # This will hold the original unfiltered image
+
+    def configure(self):
+        # No additional configuration required for this filter
+        pass
+
+    def apply(self, filtered_screenshot):
+        # Check if the original screenshot is set
+        if self.screenshot is None:
+            return
+
+        if not self._is_binary(filtered_screenshot):
+            return
+
+        # Apply the binary mask to the original screenshot
+        masked_image = cv.bitwise_and(self.screenshot, self.screenshot, mask=filtered_screenshot)
+
+        return masked_image

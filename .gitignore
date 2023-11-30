@@ -6,3 +6,4 @@ object-detection-model/
 *.ipynb
 text_detector.py
 graph_creator.py
+test.py

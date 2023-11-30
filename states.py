@@ -11,7 +11,9 @@ class StreetNavigation:
         self.bot = bot
         self.walkable_det = ApplyFilter('ttc-street-walkable')
         self.cog_detector = ApplyFilter('cogs')
-        self.arrow_det = ApplyFilter('sillystreet-arrow')
+        self.minimap_dets = {'arrow': ApplyFilter('arrow'),
+                             'taskicon': ApplyFilter('taskicon'),
+                             'minimap-mask': ApplyFilter('minimap-mask')}
         self.visualizations = {}
 
         self.state = "NAVIGATING_STREET"
@@ -23,6 +25,7 @@ class StreetNavigation:
         self.keep_map_open_for = 1.3
         self.minimap_graph = self.load_minimap_graph('sillystreet')
         self.minimap_path = None
+        self.minimap_mask = None
         self.angle_thresh = (1/12) * np.pi # if angle below (-this/2) turn left
         self.node_reached_thresh = 10 #pixels
         self.next_node_idx = 0
@@ -42,7 +45,7 @@ class StreetNavigation:
 
     def enter(self):
         self.bot.toggle_minimap()
-        self.bot.start_moving()
+        #self.bot.start_moving()
         
     def update(self, screenshot):
         # Calculate `looking_at_minimap` status
@@ -104,8 +107,35 @@ class StreetNavigation:
         viz = Utils.visualise([cogs, walkable])
         self.visualizations['Vision'] = viz
 
+    def detect_on_minimap(self, screenshot, item_name):
+        item = np.zeros_like(screenshot[:,:,0])
+
+        items = self.minimap_dets[item_name].apply(screenshot)
+
+        # Find contours in the arrow-detected image
+        contours, _ = cv.findContours(items, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+
+        for contour in contours:
+            # Check if any point of the contour is within the mask
+            for point in contour:
+                if self.minimap_mask[point[0][1], point[0][0]] == 255:
+                    # Draw the full contour of the arrow
+                    cv.drawContours(item, [contour], -1, (255, 255, 255), -1)
+                    break
+
+        return item
+    
     def execute_minimap_logic(self, screenshot):
-        arrow = self.arrow_det.apply(screenshot)
+        if self.minimap_mask is None:
+            if time.time() - self.last_time > 2:
+                self.minimap_mask = self.minimap_dets['minimap-mask'].apply(screenshot)
+                cv.imshow('minimap_mask', self.minimap_mask)
+                cv.waitKey(0)
+                cv.destroyAllWindows()
+                self.last_time = time.time()
+            return
+
+        arrow = self.detect_on_minimap(screenshot, 'arrow')
 
         try:
             self.arrow_pos, self.arrow_dir = self.calc_arrow_vector(arrow)
@@ -116,11 +146,12 @@ class StreetNavigation:
             return
         
         if self.minimap_path is None:
-            task_location_det = ApplyFilter('sillystreet-task')
-            task_logo = task_location_det.apply(screenshot)
-            if not np.count_nonzero(task_logo):
-                return
-            self.task_location = Utils.calc_centroid(task_logo)
+            # task_location_det = ApplyFilter('sillystreet-task')
+            # task_logo = task_location_det.apply(screenshot)
+            # if not np.count_nonzero(task_logo):
+            #     return
+            # self.task_location = Utils.calc_centroid(task_logo)
+            self.task_location = (300,300)
             self.calc_minimap_path()
 
             self.path_viz = Utils.draw_path_on_image(self.minimap_graph, self.minimap_path, self.task_location)
