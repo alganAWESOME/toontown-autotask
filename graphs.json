@@ -545,5 +545,171 @@
                 "distance": 39.01281840626232
             }
         ]
+    },
+    "loopylane": {
+        "nodes": [
+            {
+                "id": 0,
+                "x": 447,
+                "y": 185,
+                "stop_required": false
+            },
+            {
+                "id": 1,
+                "x": 444,
+                "y": 208,
+                "stop_required": false
+            },
+            {
+                "id": 2,
+                "x": 381,
+                "y": 222,
+                "stop_required": false
+            },
+            {
+                "id": 3,
+                "x": 354,
+                "y": 259,
+                "stop_required": false
+            },
+            {
+                "id": 4,
+                "x": 325,
+                "y": 255,
+                "stop_required": false
+            },
+            {
+                "id": 5,
+                "x": 308,
+                "y": 222,
+                "stop_required": false
+            },
+            {
+                "id": 6,
+                "x": 270,
+                "y": 222,
+                "stop_required": false
+            },
+            {
+                "id": 7,
+                "x": 255,
+                "y": 262,
+                "stop_required": false
+            },
+            {
+                "id": 8,
+                "x": 279,
+                "y": 277,
+                "stop_required": false
+            },
+            {
+                "id": 9,
+                "x": 279,
+                "y": 295,
+                "stop_required": false
+            },
+            {
+                "id": 10,
+                "x": 278,
+                "y": 316,
+                "stop_required": false
+            },
+            {
+                "id": 11,
+                "x": 253,
+                "y": 315,
+                "stop_required": false
+            },
+            {
+                "id": 12,
+                "x": 229,
+                "y": 272,
+                "stop_required": false
+            },
+            {
+                "id": 13,
+                "x": 201,
+                "y": 206,
+                "stop_required": false
+            },
+            {
+                "id": 14,
+                "x": 179,
+                "y": 205,
+                "stop_required": false
+            }
+        ],
+        "edges": [
+            {
+                "start": 0,
+                "end": 1,
+                "distance": 23.194827009486403
+            },
+            {
+                "start": 1,
+                "end": 2,
+                "distance": 64.53681120105021
+            },
+            {
+                "start": 2,
+                "end": 3,
+                "distance": 45.803929962395145
+            },
+            {
+                "start": 3,
+                "end": 4,
+                "distance": 29.274562336608895
+            },
+            {
+                "start": 4,
+                "end": 5,
+                "distance": 37.12142238654117
+            },
+            {
+                "start": 5,
+                "end": 6,
+                "distance": 38.0
+            },
+            {
+                "start": 6,
+                "end": 7,
+                "distance": 42.720018726587654
+            },
+            {
+                "start": 7,
+                "end": 8,
+                "distance": 28.30194339616981
+            },
+            {
+                "start": 8,
+                "end": 9,
+                "distance": 18.0
+            },
+            {
+                "start": 9,
+                "end": 10,
+                "distance": 21.02379604162864
+            },
+            {
+                "start": 10,
+                "end": 11,
+                "distance": 25.019992006393608
+            },
+            {
+                "start": 11,
+                "end": 12,
+                "distance": 49.24428900898052
+            },
+            {
+                "start": 12,
+                "end": 13,
+                "distance": 71.69379331573968
+            },
+            {
+                "start": 13,
+                "end": 14,
+                "distance": 22.02271554554524
+            }
+        ]
     }
 }

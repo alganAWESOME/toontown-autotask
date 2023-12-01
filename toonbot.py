@@ -11,9 +11,16 @@ class ToonBot:
         self.wincap.start()
         self.facing_x = self.wincap.w // 2
         self.running = True
-        self.kb_access = False
+        self.kb_access = True
 
-        self.state = StreetNavigation(self)
+        self.state = None
+
+        self.start()
+
+    def start(self):
+        #self.start_moving()
+        self.state = StreetNavigation(self, 'loopylane')
+        self.state.enter()
         
     def mainloop(self):
         while self.running:
@@ -22,7 +29,7 @@ class ToonBot:
                 continue
 
             self.state.update(screenshot)
-            self.visualize()
+            #self.visualize()
 
         self.stop_moving()
 

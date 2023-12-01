@@ -6,58 +6,62 @@ import json
 import networkx as nx
 from utils import Utils
 
-class StreetNavigation:
-    def __init__(self, bot) -> None:
+class State:
+    def __init__(self, context, bot):
+        self.context = context
         self.bot = bot
-        self.walkable_det = ApplyFilter('ttc-street-walkable')
-        self.cog_detector = ApplyFilter('cogs')
-        self.minimap_dets = {'arrow': ApplyFilter('arrow'),
-                             'taskicon': ApplyFilter('taskicon'),
-                             'minimap-mask': ApplyFilter('minimap-mask')}
-        self.visualizations = {}
-
-        self.state = "NAVIGATING_STREET"
-
-        # Minimap related
-        self.destination_node = 0
-        self.looking_at_minimap = True
-        self.open_map_every = 3 #seconds
-        self.keep_map_open_for = 1.3
-        self.minimap_graph = self.load_minimap_graph('sillystreet')
-        self.minimap_path = None
-        self.minimap_mask = None
-        self.angle_thresh = (1/12) * np.pi # if angle below (-this/2) turn left
-        self.node_reached_thresh = 10 #pixels
-        self.next_node_idx = 0
-        self.last_time = time.time()
-        self.arrow_pos, self.arrow_dir = None, None
-
-        # Cog avoidance related
-        self.in_danger = False
-        self.dangerous_cog_size = 1800
-        self.dangerous_cog_angle = 180
-
-        # Walkable related
-        self.walkable_x = self.bot.facing_x
-        self.walkable_turn_thresh = 50
-
-        self.enter()
 
     def enter(self):
-        self.bot.toggle_minimap()
-        #self.bot.start_moving()
-        
-    def update(self, screenshot):
-        # Calculate `looking_at_minimap` status
-        if time.time() - self.last_time >= self.open_map_every and not self.looking_at_minimap:
-            self.bot.toggle_minimap()
-            self.looking_at_minimap = True
-            self.last_time = time.time()
-            print("start looking at minimap")
-        
-        if self.looking_at_minimap:
-            self.execute_minimap_logic(screenshot)
+        pass
 
+    def update(self, screenshot):
+        pass
+
+    def exit(self):
+        pass
+
+class StreetNavigation(State):
+    def __init__(self, bot, street):
+        super().__init__(context=None, bot=bot)
+        self.street = street
+        self.state_objs = {
+            'walking': Walking(self, bot),
+            'checking_minimap': CheckingMinimap(self, bot, street)
+        }
+        self.state = None
+        self.prev_state = None
+
+        self.cog_detector = ApplyFilter('cogs')
+        self.dangerous_cog_size = 1800
+        self.dangerous_cog_angle = 180
+        self.in_danger = False
+
+        self.open_map_every = 3
+        self.last_time = time.time()
+
+    def set_state(self, new_state_name):
+        if self.state:
+            self.state.exit()
+        self.prev_state = self.state
+        self.state = self.state_objs[new_state_name]
+        self.state.enter()
+
+    def enter(self):
+        self.set_state('checking_minimap')
+
+    def update(self, screenshot):
+        self.avoid_cogs(screenshot)
+        
+        self.should_check_minimap()
+
+        print(f"in_danger={self.in_danger}, state={self.state.__class__.__name__}")
+
+        if not self.in_danger:
+            # Call update on the current state
+            if self.state:
+                self.state.update(screenshot)
+
+    def avoid_cogs(self, screenshot):
         # Calculate danger status
         cogs = self.cog_detector.apply(screenshot)
         cog_contours, _ = cv.findContours(cogs, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
@@ -74,40 +78,128 @@ class StreetNavigation:
 
         diff_x = cog_x - self.bot.facing_x # If negative, turn right
         if closest_cog_size > self.dangerous_cog_size and diff_x < self.dangerous_cog_angle:
-            if not self.in_danger:
-                print("in_danger=True")
             self.in_danger = True
         else:
-            if self.in_danger:
-                print("in_danger=False")
             self.in_danger = False
-
-        walkable = np.zeros_like(screenshot[:,:,2])
-        if not self.in_danger:
-            # If not looking_at_minimap, follow mean walkable point
-            if not self.looking_at_minimap:
-                walkable = self.walkable_det.apply(screenshot)
-                if np.count_nonzero(walkable):
-                    walkable_x, _ = Utils.calc_centroid(walkable)
-                else:
-                    walkable_x = self.bot.facing_x
-                
-                if walkable_x < self.bot.facing_x - self.walkable_turn_thresh:
-                    self.bot.turn_left()
-                elif walkable_x > self.bot.facing_x + self.walkable_turn_thresh:
-                    self.bot.turn_right()
-                else:
-                    self.bot.stop_turning()
-        else:
+        
+        if self.in_danger:
             if diff_x <= 0:
                 self.bot.turn_right()
             else:
                 self.bot.turn_left()
+        
+    def should_check_minimap(self):
+        if self.state != self.state_objs['checking_minimap']:
+            if time.time() - self.last_time >= self.open_map_every:
+                self.set_state('checking_minimap')
+                self.last_time = time.time()
+                print("start looking at minimap")
 
-        viz = Utils.visualise([cogs, walkable])
-        self.visualizations['Vision'] = viz
+class Walking(State):
+    def __init__(self, context, bot):
+        super().__init__(context, bot)
 
-    def detect_on_minimap(self, screenshot, item_name):
+        self.walkable_det = ApplyFilter('ttc-street-walkable')
+        self.walkable_x = self.bot.facing_x
+        self.walkable_turn_thresh = 50
+
+    def update(self, screenshot):
+        walkable = self.walkable_det.apply(screenshot)
+        if np.count_nonzero(walkable):
+            walkable_x, _ = Utils.calc_centroid(walkable)
+        else:
+            walkable_x = self.bot.facing_x
+        
+        if walkable_x < self.bot.facing_x - self.walkable_turn_thresh:
+            self.bot.turn_left()
+        elif walkable_x > self.bot.facing_x + self.walkable_turn_thresh:
+            self.bot.turn_right()
+        else:
+            self.bot.stop_turning()
+
+class CheckingMinimap(State):
+    def __init__(self, context, bot, street):
+        super().__init__(context, bot)
+
+        self.minimap_dets = {'arrow': ApplyFilter('arrow'),
+                             'taskicon': ApplyFilter('taskicon'),
+                             'minimap-mask': ApplyFilter('minimap-mask')}
+        self.minimap_graph = self.load_minimap_graph(street)
+        self.minimap_mask = None
+        self.minimap_path = None
+        self.keep_map_open_for = 1.3 # seconds
+        self.node_angle_thresh = (1/12) * np.pi # if angle below (-thresh/2) turn left
+        self.node_reached_thresh = 10 # pixels
+        self.next_node_idx = 0
+        self.arrow_pos, self.arrow_dir = None, None
+
+    def enter(self):
+        self.bot.toggle_minimap()
+
+    # def exit(self):
+    #     self.bot.toggle_minimap()
+    
+    def update(self, screenshot):
+        # Initialise minimap mask
+        if self.minimap_mask is None:
+            if time.time() - self.context.last_time > 1:
+                self.minimap_mask = self.minimap_dets['minimap-mask'].apply(screenshot)
+                self.context.last_time = time.time()
+                self.bot.start_moving()
+            return
+
+        # Calc arrow vector
+        arrow = self.detect_on_minimap('arrow', screenshot)
+        # If no arrow detected this frame
+        if not np.count_nonzero(arrow):
+            return
+        self.arrow_pos, self.arrow_dir = self.calc_arrow_vector(arrow)
+
+        # Initialise minimap path
+        if self.minimap_path is None:
+            taskicon = self.detect_on_minimap('taskicon', screenshot)
+            if not np.count_nonzero(taskicon):
+                return
+            self.task_location = Utils.calc_centroid(taskicon)
+            self.calc_minimap_path()
+            #self.path_viz = Utils.draw_path_on_image(self.minimap_graph, self.minimap_path, self.task_location)
+
+        next_node_pos = self.get_node_pos(self.next_node_idx)
+        # Angle between arrow direction and direction to next node
+        angle = self.calc_angle_to_targ(next_node_pos)
+        print(f"angle={angle}")
+
+        if np.abs(angle) > np.pi / 2:
+            self.bot.stop_moving()
+        else:
+            self.bot.start_moving()
+        
+        if angle < -self.node_angle_thresh / 2:
+            self.bot.turn_left()
+        elif angle > self.node_angle_thresh / 2:
+            self.bot.turn_right()
+        else:
+            self.bot.stop_turning()
+            # Calculate if minimap should be closed
+            if time.time() - self.context.last_time >= self.keep_map_open_for:
+                print("quit looking at minimap")
+                self.bot.toggle_minimap()
+                self.context.last_time = time.time()
+                self.context.set_state('walking')
+
+        # Update next_node
+        if Utils.euclidean_dist(self.arrow_pos, next_node_pos) < self.node_reached_thresh:
+            # If we have not reached final node in path
+            if self.next_node_idx != len(self.minimap_path)-1:
+                self.next_node_idx += 1
+                next_node_pos = self.get_node_pos(self.next_node_idx)
+                print(f"new_target_node={self.minimap_path[self.next_node_idx]}")
+            else:
+                next_node_pos = self.task_location
+                self.navigating_to_door = True
+                print("moving towards task")
+
+    def detect_on_minimap(self, item_name, screenshot):
         item = np.zeros_like(screenshot[:,:,0])
 
         items = self.minimap_dets[item_name].apply(screenshot)
@@ -124,75 +216,6 @@ class StreetNavigation:
                     break
 
         return item
-    
-    def execute_minimap_logic(self, screenshot):
-        if self.minimap_mask is None:
-            if time.time() - self.last_time > 2:
-                self.minimap_mask = self.minimap_dets['minimap-mask'].apply(screenshot)
-                cv.imshow('minimap_mask', self.minimap_mask)
-                cv.waitKey(0)
-                cv.destroyAllWindows()
-                self.last_time = time.time()
-            return
-
-        arrow = self.detect_on_minimap(screenshot, 'arrow')
-
-        try:
-            self.arrow_pos, self.arrow_dir = self.calc_arrow_vector(arrow)
-        except:
-            pass
-
-        if self.arrow_pos is None or self.arrow_dir is None:
-            return
-        
-        if self.minimap_path is None:
-            # task_location_det = ApplyFilter('sillystreet-task')
-            # task_logo = task_location_det.apply(screenshot)
-            # if not np.count_nonzero(task_logo):
-            #     return
-            # self.task_location = Utils.calc_centroid(task_logo)
-            self.task_location = (300,300)
-            self.calc_minimap_path()
-
-            self.path_viz = Utils.draw_path_on_image(self.minimap_graph, self.minimap_path, self.task_location)
-
-        minimap_viz = Utils.draw_arrow_on_image(self.path_viz, self.arrow_pos, self.arrow_dir)
-        self.visualizations['Minimap'] = minimap_viz
-
-        next_node_pos = self.get_node_pos(self.next_node_idx)
-        # Angle between arrow direction and direction to next node
-        angle = self.calc_angle_to_targ(next_node_pos)
-        print(f"angle={angle}")
-
-        if np.abs(angle) > np.pi / 2:
-            self.bot.stop_moving()
-        else:
-            self.bot.start_moving()
-        
-        if angle < -self.angle_thresh / 2:
-            self.bot.turn_left()
-        elif angle > self.angle_thresh / 2:
-            self.bot.turn_right()
-        else:
-            self.bot.stop_turning()
-            # Calculate if minimap should be closed
-            if time.time() - self.last_time >= self.keep_map_open_for:
-                print("quit looking at minimap")
-                self.bot.toggle_minimap()
-                self.looking_at_minimap = False
-                self.last_time = time.time()
-
-        # Update next_node
-        if Utils.euclidean_dist(self.arrow_pos, next_node_pos) < self.node_reached_thresh:
-            # If we have not reached final node in path
-            if self.next_node_idx != len(self.minimap_path)-1:
-                self.next_node_idx += 1
-                next_node_pos = self.get_node_pos(self.next_node_idx)
-                print(f"new_target_node={self.minimap_path[self.next_node_idx]}")
-            else:
-                next_node_pos = self.task_location
-                self.navigating_to_door = True
-                print("moving towards task")
     
     @staticmethod    
     def calc_arrow_vector(binary_image):
@@ -247,9 +270,27 @@ class StreetNavigation:
 
         return angle
     
-    def get_node_pos(self, node_idx):
-        return self.minimap_graph.nodes[self.minimap_path[node_idx]]['pos']
+    @staticmethod
+    def load_minimap_graph(graph_name):
+        with open('graphs.json', 'r') as file:
+            data = json.load(file)
+        
+        if graph_name not in data:
+            print(f"Graph '{graph_name}' not found in the file.")
+            return None
 
+        G = nx.Graph()
+        nodes = data[graph_name]['nodes']
+        edges = data[graph_name]['edges']
+
+        for node in nodes:
+            G.add_node(node['id'], pos=(node['x'], node['y']))
+
+        for edge in edges:
+            G.add_edge(edge['start'], edge['end'], weight=edge['distance'])
+
+        return G
+    
     def calc_minimap_path(self):
         # Find the nearest node to the start point
         start_nearest_node = None
@@ -274,24 +315,6 @@ class StreetNavigation:
                                             source=start_nearest_node,
                                             target=end_nearest_node,
                                             weight='weight')
-    
-    @staticmethod
-    def load_minimap_graph(graph_name):
-        with open('graphs.json', 'r') as file:
-            data = json.load(file)
         
-        if graph_name not in data:
-            print(f"Graph '{graph_name}' not found in the file.")
-            return None
-
-        G = nx.Graph()
-        nodes = data[graph_name]['nodes']
-        edges = data[graph_name]['edges']
-
-        for node in nodes:
-            G.add_node(node['id'], pos=(node['x'], node['y']))
-
-        for edge in edges:
-            G.add_edge(edge['start'], edge['end'], weight=edge['distance'])
-
-        return G
+    def get_node_pos(self, node_idx):
+        return self.minimap_graph.nodes[self.minimap_path[node_idx]]['pos']
